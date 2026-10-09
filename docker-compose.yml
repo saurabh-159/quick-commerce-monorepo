@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # 1. MongoDB Database
+  mongodb:
+    image: mongo:latest
+    container_name: qc_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  # 2. Redis Cache & Pub/Sub
+  redis:
+    image: redis:alpine
+    container_name: qc_redis
+    ports:
+      - "6379:6379"
+
+  # 3. Backend Core (Node.js)
+  backend-core:
+    build: ./backend-core
+    container_name: qc_backend
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - MONGO_URI=mongodb://mongodb:27017/quick-commerce
+      - REDIS_URL=redis://redis:6379
+      - AI_SERVICE_URL=http://ai-service:8000
+    depends_on:
+      - mongodb
+      - redis
+      - ai-service
+
+  # 4. Socket Service (Real-time WebSocket)
+  socket-service:
+    build: ./socket-service
+    container_name: qc_socket
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+
+  # 5. AI Service (Python FastAPI)
+  ai-service:
+    build: ./ai-service
+    container_name: qc_ai
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+
+volumes:
+  mongo_data:

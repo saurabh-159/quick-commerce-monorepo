@@ -1,0 +1,54 @@
+name: Quick-Commerce CI/CD Pipeline
+
+# Kab chalegi ye pipeline? Jab bhi aap main branch par code push karenge
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: GitHub se code ko download karna (Checkout)
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # Step 2: Node.js environment setup karna (Backend aur Socket ke liye)
+    - name: Set up Node.js 18
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    # Step 3: Backend-core dependencies check aur build test
+    - name: Test Backend Core
+      run: |
+        cd backend-core
+        npm ci
+
+    # Step 4: Socket-service dependencies check aur build test
+    - name: Test Socket Service
+      run: |
+        cd socket-service
+        npm ci
+
+    # Step 5: Web-frontend dependencies check aur build test
+    - name: Test Web Frontend
+      run: |
+        cd web-frontend
+        npm ci
+        npm run build
+
+    # Step 6: Python AI Service check (Python setup karke requirements test karna)
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Test AI Service Requirements
+      run: |
+        cd ai-service
+        pip install -r requirements.txt

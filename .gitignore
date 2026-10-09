@@ -1,0 +1,16 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+npm-debug.log*
+.vscode/
+.idea/
+.next/
+dist/
+.expo/
+__pycache__/
+*.pyc
+.venv/
+venv/

@@ -1,0 +1,2 @@
+﻿# quick-commerce-monorepo
+
