@@ -44,9 +44,12 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <div className="flex items-center gap-2">
-          <Link href="/help" className="hidden px-3 py-2 text-sm font-semibold text-gray-700 sm:inline">
-            Help
+        <div className="flex items-center gap-1 sm:gap-2">
+          <Link
+            href="/help"
+            className="whitespace-nowrap px-1.5 py-2 text-xs font-semibold text-gray-700 sm:px-3 sm:text-sm"
+          >
+            Quick Shopping
           </Link>
           {token && role === 'customer' && (
             <Link href="/orders" className="hidden px-3 py-2 text-sm font-semibold text-gray-700 sm:inline">
@@ -55,7 +58,7 @@ export default function Navbar() {
           )}
           <Link
             href="/cart"
-            className="relative rounded-xl border border-gray-200 px-3 py-2 text-sm font-bold text-gray-800"
+            className="relative whitespace-nowrap rounded-xl border border-gray-200 px-2.5 py-2 text-sm font-bold text-gray-800 sm:px-3"
           >
             Cart
             {cartCount > 0 && (
@@ -65,12 +68,12 @@ export default function Navbar() {
           {token ? (
             <button
               onClick={handleLogout}
-              className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-600"
+              className="whitespace-nowrap rounded-xl px-2.5 py-2 text-sm font-semibold text-gray-600 sm:px-3"
             >
               Logout
             </button>
           ) : (
-            <Link href="/login" className="rounded-xl bg-[#0c831f] px-4 py-2 text-sm font-bold text-white">
+            <Link href="/login" className="whitespace-nowrap rounded-xl bg-[#0c831f] px-3 py-2 text-sm font-bold text-white sm:px-4">
               Login
             </Link>
           )}

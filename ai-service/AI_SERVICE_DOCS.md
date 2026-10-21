@@ -6,7 +6,7 @@
 >
 > Aap yeh MD file Gemini / ChatGPT / kisi mentor ko de sakte ho: *"Is document ke hisaab se mujhe Gen AI teach karo, step by step."*
 >
-> Last updated: 21 Oct 2026 · Repo: `quick-commerce-backend` (ai-service + full-stack deploy notes)
+> Last updated: 21 Oct 2026 (assistant = LangGraph `catalog_graph`) · Repo: `quick-commerce-backend`
 
 ---
 
@@ -102,22 +102,44 @@ Node teen files **sirf proxy** hain. Asal AI logic Python files mein hai.
 | **UI** | `components/AiSupportChat.js` (`mode="assistant"`) |
 | **Helper** | `aiAssistant(query, { lat, lng })` |
 | **Python router** | `routers/assistant.py` → `POST /assistant` |
-| **Main logic** | `catalog_agent.py` → `run_catalog_assistant`, `detect_intent`, `cards_from_tool` |
+| **Main logic (LIVE)** | `catalog_graph.py` → `run_catalog_graph` (LangGraph) |
+| **Helpers** | `catalog_agent.py` → `detect_intent`, `cards_from_tool` |
 | **Tools** | `catalog_tools.py` → `execute_catalog_tool` |
 | **DB** | `db_tools.py` → `get_nearby_stores_sync`, `get_store_categories_sync`, `get_category_products_sync`, `resolve_category_sync` |
-| **Technique** | **Function / tool calling** + **intent routing** + **live Mongo** + **UI cards** |
+| **Technique** | **LangGraph** + **keyword intent routing** + **forced Mongo tool** + **LLM short answer** + **UI cards** |
 
-**Simple flow:**
+**Simple flow (abhi production path):**
+
+```text
+POST /assistant
+  → intent_node (detect_intent keywords)
+  → agar intent nearby/categories/products → tool_node (forced Mongo tool)
+  → answer_node (tool JSON se short GPT answer; warna fallback help text)
+  → response: answer + cards + tools_used
+```
 
 1. User sawal + lat/lng.
-2. Intent: nearby store / category / product.
-3. GPT tool choose karta hai (`get_nearby_stores`, `get_store_categories`, `get_category_products`).
-4. Python Mongo se real data laata hai.
-5. Response: text `answer` + clickable `cards` (store / category / product).
+2. `detect_intent(query)` → `nearby` | `categories` | `products` | `general`.
+3. Intent match ho to **forced** tool:
+   - `nearby` → `get_nearby_stores`
+   - `categories` → `get_store_categories`
+   - `products` → `get_category_products`
+4. Python Mongo se real data → `cards_from_tool` se UI cards.
+5. `answer_node` tool JSON se short text banata hai (GPT). Agar tool nahi chala / empty → fallback:
+   `"Ask about nearby stores, a store's categories, or products in a category."`
+
+**Important — kyun kabhi empty answer aata hai:**
+
+- Sirf `"store"` likhne se intent **`general`** ho jata hai (nearby phrases list mein nahi).
+- Nearby detect hone ke liye query mein phrases chahiye jaise: `near me`, `nearby`, `stores near`, `kitne store`, `mere location`, …
+- `general` pe **koi tool nahi chalta** → `tools_used: []`, `cards: []`, upar wala help text.
+- Lat/lng bhejne se farak nahi padta jab tak intent tool-worthy na ho — location tabhi use hoti hai jab tool node chale.
 
 **History save nahi hoti.** Har message naya request hai. **Chroma RAG is route pe nahi** chalta.
 
-**Category match:** user “fruit” ya “fruits and vegetables” likhe to `resolve_category_sync` loose name/slug match karta hai (`Fruits & Vegetables`).
+**Category match:** user “fruit” / “vegetable” likhe to `intent_node` products treat karta hai; `resolve_category_sync` loose name/slug match karta hai (`Fruits & Vegetables`).
+
+**Legacy (code mein hai, router use nahi karta):** `catalog_agent.run_catalog_assistant` — purana OpenAI multi-round tool-calling loop. Seekhne ke liye useful; live API ab LangGraph use karti hai.
 
 ### 0.4 Order support — logged-in order help
 
@@ -153,18 +175,19 @@ Node teen files **sirf proxy** hain. Asal AI logic Python files mein hai.
 | Embedding | search, recommendations |
 | Cosine similarity | search, recommendations |
 | Redis cache | product embeddings |
-| Tool / function calling | assistant, order-support |
+| LangGraph (intent → tool → answer) | **assistant** (`catalog_graph.py`) |
+| Tool / function calling | order-support; also legacy `run_catalog_assistant` |
 | Live Mongo | assistant, order-support, search product list |
-| Intent routing | assistant (`detect_intent`) |
+| Intent routing (keywords) | assistant (`detect_intent` in `catalog_agent.py`) |
 | UI cards | assistant response `cards` |
-| LLM text only | admin generate-content |
+| LLM text only | admin generate-content; assistant answer_node (after tool) |
 | RAG / Chroma | **in 5 APIs mein nahi** (code `rag_service.py` mein alag pada hai) |
 
 ### 0.7 Gemini ko kaise do
 
 Is section ko copy karke bolo:
 
-> “Section 0 ke hisaab se mujhe har API ka flow, technique, aur file line-by-line samjhao. Pehle search (embedding + cosine), phir assistant (tool calling).”
+> “Section 0 ke hisaab se mujhe har API ka flow, technique, aur file line-by-line samjhao. Pehle search (embedding + cosine), phir assistant (`catalog_graph` LangGraph: intent → forced tool → answer).”
 
 ---
 
@@ -176,9 +199,9 @@ Is section ko copy karke bolo:
 | 2 | LLM chat + prompts | `llm_service.py`, `prompts/templates.py` |
 | 3 | Embeddings + cosine similarity | `embedding_service.py`, `search_service.py` |
 | 4 | Vector DB + RAG | `vector_db.py`, `rag_service.py`, `routers/rag.py` |
-| 5 | Tool calling + agents | `tool_service.py`, `agent_service.py`, `agent_tools.py` |
+| 5 | Tool calling + agents | `tool_service.py`, `agent_service.py`, `agent_tools.py`, `catalog_tools.py` |
 | 6 | Redis cache + session memory | `utils/cache.py`, `session_memory.py` |
-| 7 | LangChain / LangGraph | `langchain_service.py`, `graph_service.py` |
+| 7 | LangChain / LangGraph | `langchain_service.py`, `graph_service.py` (demo), **`catalog_graph.py` (live assistant)** |
 | 8 | Multimodal + security + rate limit | `multimodal.py`, `security_*`, middleware |
 | 9 | Fine-tune idea + production checklist | `training/*`, section 20 |
 
@@ -333,14 +356,14 @@ Is repo mein dono hain: `db_tools.py`.
 | L3 | Similarity Search | “Closest meaning” products | ✅ `search_service.py`, `recommend_service.py` |
 | L4 | Vector DB | Vectors store + query | ✅ Chroma `vector_db.py` |
 | L5 | RAG | Retrieve docs → inject context → generate | ✅ `rag_service.py` |
-| L6 | Tool / Function Calling | LLM Python function call kare | ✅ `tool_service`, `agent_service` |
-| L7 | Agents | Multi-step decide → act → reply | ✅ `agent_*`, `graph_service` |
+| L6 | Tool / Function Calling | LLM / graph Python function call kare | ✅ `tool_service`, `agent_service`, `catalog_tools` |
+| L7 | Agents | Multi-step decide → act → reply | ✅ `agent_*`, `catalog_graph` (live), `graph_service` (demo) |
 | L8 | Memory | Purani chat yaad rakhna | ✅ `memory_service`, `session_memory` |
 | L9 | Caching | Same prompt pe dubara LLM na chalao | ✅ Redis `utils/cache.py` |
 | L10 | Multimodal | Image + text | ✅ `routers/multimodal.py` |
 | L11 | Guardrails | Prompt injection block | ✅ `security_filters.py` |
 | L12 | Structured Output | JSON filters / catalog copy | ✅ `parse.py`, `admin_ai_service` |
-| L13 | Frameworks | LangChain LCEL, LangGraph | ✅ both services |
+| L13 | Frameworks | LangChain LCEL, LangGraph | ✅ `langchain_service`, `catalog_graph` (prod), `graph_service` (demo) |
 | L14 | Fine-tuning | Model pe apna data train | 🟡 scripts only (`training/`) |
 | L15 | Production | Auth, rate limit, logs, CORS | ✅ middleware + config |
 
@@ -732,6 +755,10 @@ response = client.chat.completions.create(
 | `tool_service.py` | `check_product_stock` | `POST /tool-chat` |
 | `agent_tools.py` + `agent_service.py` | `check_order_status` | `POST /api/v1/agent/run-agent` |
 | `support_service.py` | `get_live_order_status` | `POST /support/query` |
+| `catalog_tools.py` + `catalog_graph.py` | `get_nearby_stores`, `get_store_categories`, `get_category_products` | `POST /assistant` (**live**) |
+| `catalog_agent.py` → `run_catalog_assistant` | same catalog tools (OpenAI chooses) | **not mounted** — learning / legacy |
+
+**Live assistant note:** `catalog_graph` LLM se tool choose **nahi** karwata. Intent keywords se tool **force** hota hai; LLM sirf final short `answer` likhta hai.
 
 **Key learning:** Tool definition (JSON schema) LLM ke liye hai. Actual execution **tumhara Python** karta hai. LLM kabhi bhi directly DB touch nahi karta.
 
@@ -769,6 +796,8 @@ if response_message.tool_calls:
 
 `run_shopping_agent(query)` thin wrapper hai isi loop pe.
 
+**Live shopping assistant alag path hai:** OpenAI tool-loop nahi — LangGraph (`catalog_graph.py`) intent → forced Mongo tool → short answer. Detail Section **0.3** aur **12**.
+
 ---
 
 ## 12. LangChain & LangGraph
@@ -797,6 +826,42 @@ print(chain.invoke({"category": "dairy", "item": "protein"}))
 
 LangGraph = nodes + edges. Har node state update karta hai.
 
+#### A) Live shopping assistant (`catalog_graph.py`) — **yeh padho pehle**
+
+Mounted: `POST /assistant` → `run_catalog_graph`.
+
+```text
+START
+  → intent_node          # detect_intent(query) → nearby | categories | products | general
+  → (conditional)
+       ├── intent in FORCED_TOOL → tool_node → answer_node → END
+       └── else (general)        → answer_node → END
+```
+
+| Node | Kaam |
+|------|------|
+| `intent_node` | Keyword intent + fruit/veggie → products override |
+| `tool_node` | Intent se tool name force (`get_nearby_stores` / …), lat/lng inject, Mongo JSON + cards |
+| `answer_node` | Agar `tool_result` empty → help text; warna GPT short answer from JSON only |
+
+State fields: `query`, `lat`, `lng`, `intent`, `tool_name`, `tool_result`, `cards`, `answer`.
+
+Response shape:
+
+```json
+{
+  "query": "...",
+  "answer": "...",
+  "cards": [],
+  "tools_used": ["get_nearby_stores"],
+  "context_used": ["get_nearby_stores"]
+}
+```
+
+Gemini tip: `"store"` alone → `general` → empty tool → fallback answer. `"nearby stores"` + lat/lng → tool runs → real cards.
+
+#### B) Demo graph (`graph_service.py`) — learning only
+
 ```text
 analyzer_node
      │
@@ -804,9 +869,9 @@ analyzer_node
      └── else            → chat_node  → END
 ```
 
-**Repo:** `graph_service.py` — `run_workflow(user_message)`
+**Repo:** `graph_service.py` — `run_workflow(user_message)` (HTTP pe directly assistant nahi; agent learning demo).
 
-Beginner exercise: analyzer mein LLM call add karo instead of simple `"order" in query` string check.
+Beginner exercise: `catalog_graph` mein naya intent add karo (e.g. `"hours"` → store hours tool), ya analyzer mein LLM call.
 
 ---
 
@@ -1120,6 +1185,13 @@ Agents ko **live data** chahiye — mock dict se aage.
 | `list_active_products_sync` | Catalog for search/recommend |
 | `get_order_by_number_sync` | Order status for agent tool |
 | `get_latest_order_for_user_sync` | Support bot live order |
+| `get_nearby_stores_sync` | Lat/lng se nearest stores (assistant) |
+| `resolve_store_id_sync` | store_id / name / nearest from lat-lng |
+| `get_store_categories_sync` | Store categories + product counts |
+| `resolve_category_sync` | Loose category name/slug match |
+| `get_category_products_sync` | Products in a category for a store |
+
+Wrappers for OpenAI/LangGraph tools: `catalog_tools.py` (`execute_catalog_tool`).
 
 Libraries: `pymongo` (sync) + `motor` (async).
 
@@ -1234,9 +1306,12 @@ Aur add karna seekho (advanced homework):
 | `memory_service.py` | Chat with optional Redis session |
 | `session_memory.py` | Redis list history helpers |
 | `langchain_service.py` | LCEL shopping suggest |
-| `graph_service.py` | LangGraph state workflow |
+| `graph_service.py` | LangGraph **demo** workflow (order vs chat) |
+| `catalog_graph.py` | LangGraph **live** assistant (`run_catalog_graph`) |
+| `catalog_agent.py` | `detect_intent`, `cards_from_tool`; legacy `run_catalog_assistant` |
+| `catalog_tools.py` | Catalog tool schemas + `execute_catalog_tool` |
 | `admin_ai_service.py` | JSON product content |
-| `db_tools.py` | Mongo helpers for AI tools |
+| `db_tools.py` | Mongo helpers for AI tools (incl. nearby/categories/products) |
 | `eta_service.py` | Haversine ETA (not Gen AI) |
 
 ### Routers (HTTP)
@@ -1252,7 +1327,7 @@ Aur add karna seekho (advanced homework):
 | `agent_router.py` | `POST /agent-support` |
 | `tools.py` | `POST /tool-chat` |
 | `support_router.py` | `POST /support/query` |
-| `assistant.py` | `POST /assistant` |
+| `assistant.py` | `POST /assistant` → `run_catalog_graph` |
 | `memory.py` | `POST /chat-memory` |
 | `langchain_router.py` | `POST /langchain-suggest` |
 | `multimodal.py` | `/api/v1/multimodal/analyze-image` |
@@ -1284,7 +1359,7 @@ POST /eta
 POST /recommend
 POST /embed
 POST /search
-POST /assistant
+POST /assistant                 # → catalog_graph.run_catalog_graph
 POST /chat-memory
 POST /tool-chat
 POST /agent-support
@@ -1335,7 +1410,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```text
 fastapi, uvicorn, pydantic, pydantic-settings
 openai
-langchain-openai, langchain-core
+langchain-openai, langchain-core, langgraph
 chromadb
 redis
 motor, pymongo
@@ -1353,11 +1428,12 @@ Beginner → advanced homework (Gemini se discuss kar sakte ho):
 3. **Cache:** Section 14.8 wala `practice_cache.py` chalao; TTL expire hone do, miss dekho.
 4. **RAG:** 3 FAQs Chroma mein daalo, 5 questions poocho, context + answer print karo.
 5. **Tools:** Naya tool `cancel_order(order_id)` mock dict se banao, agent mein wire karo.
-6. **Memory:** Same `session_id` se 3 messages bhejo, Redis `LRANGE` se verify karo.
-7. **Security:** Naya blacklist phrase add karo + unit test socho.
-8. **Production:** Gemini provider ke liye `llm_clients.py` mein second client design karo (interface same).
-9. **Eval:** 10 Q&A CSV banao; script se RAG answers compare karo (manual score).
-10. **Fine-tune:** `dataset_prep.py` mein 20 aur examples add karo.
+6. **LangGraph assistant:** `detect_intent` mein `"store"` / `"dukaan"` ko `nearby` treat karo; `POST /assistant` se verify karo ki cards aate hain.
+7. **Memory:** Same `session_id` se 3 messages bhejo, Redis `LRANGE` se verify karo.
+8. **Security:** Naya blacklist phrase add karo + unit test socho.
+9. **Production:** Gemini provider ke liye `llm_clients.py` mein second client design karo (interface same).
+10. **Eval:** 10 Q&A CSV banao; script se RAG answers compare karo (manual score).
+11. **Fine-tune:** `dataset_prep.py` mein 20 aur examples add karo.
 
 ---
 
@@ -1376,7 +1452,9 @@ Beginner → advanced homework (Gemini se discuss kar sakte ho):
 | **Tool / Function calling** | LLM Python function invoke karne ko kahe |
 | **Agent** | Multi-step LLM + tools loop |
 | **LCEL** | LangChain Expression Language (`prompt \| llm \| parser`) |
-| **LangGraph** | Graph/state-machine for agents |
+| **LangGraph** | Graph/state-machine for agents; live shopping path = `catalog_graph.py` |
+| **Intent routing** | Keywords se decide kaunsa tool chalega (`detect_intent`) |
+| **Forced tool** | Intent ke hisaab se tool name fix; LLM choose nahi karta |
 | **TTL** | Time To Live — key kab expire hogi |
 | **Cache hit/miss** | Answer Redis mein mila / nahi mila |
 | **Rate limit** | Per time window max requests |
@@ -1694,4 +1772,8 @@ Section **26.11** wala prompt copy karo — Gemini Step 26 ports/env follow kark
 
 ## One-line summary
 
-Yeh `ai-service` ek **mini Gen AI university** hai: chat, embeddings, Chroma RAG, tool-calling agents, LangChain/LangGraph, Redis cache/memory/rate-limit, multimodal, guardrails, structured JSON, Mongo tools, aur fine-tune stubs — beginner se production-ready learning path ke saath. Section **26** mein full monorepo **ports + env + AWS deploy** cheat sheet bhi hai.
+Yeh `ai-service` ek **mini Gen AI university** hai: chat, embeddings, Chroma RAG, tool-calling agents, LangChain/LangGraph (`catalog_graph` = live `/assistant`), Redis cache/memory/rate-limit, multimodal, guardrails, structured JSON, Mongo tools, aur fine-tune stubs — beginner se production-ready learning path ke saath. Section **0** live frontend APIs; Section **26** mein full monorepo **ports + env + AWS deploy** cheat sheet.
+
+**Gemini start prompt (code seekhne ke liye):**
+
+> “Read `ai-service/AI_SERVICE_DOCS.md`. Section 0 se start karo. Assistant ke liye `catalog_graph.py` + `detect_intent` samjhao. Purana `run_catalog_assistant` legacy hai — live router LangGraph use karta hai. Phir mujhe step-by-step code changes karwao.”
