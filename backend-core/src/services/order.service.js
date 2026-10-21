@@ -28,7 +28,14 @@ const createOrderFromCart = async (userId, addressId, paymentMethod) => {
   const distance = haversineDistance([storeLng, storeLat], [addrLng, addrLat]);
 
   if (distance > store.serviceRadiusKm) {
-    throw new Error('Address is outside store service radius');
+    const error = new Error('Address is outside store service radius');
+    error.statusCode = 400;
+    error.details = {
+      storeName: store.name,
+      distanceKm: Number(distance.toFixed(1)),
+      serviceRadiusKm: store.serviceRadiusKm,
+    };
+    throw error;
   }
 
   // Verify stock and calculate totals

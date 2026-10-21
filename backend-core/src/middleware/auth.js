@@ -1,4 +1,5 @@
 const sendResponse = require('../utils/apiResponse');
+const { verifyAccessToken } = require('../utils/tokens');
 
 const protect = (req, res, next) => {
   const authHeader = req.headers.authorization;

@@ -1,6 +1,50 @@
-body {
-  margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
-  background: #f7f7f7;
-  color: #111;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.store-location-map.leaflet-container {
+  z-index: 0;
+}
+
+.store-location-map .leaflet-pane img,
+.store-location-map.leaflet-container img {
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.home-wrap {
+  width: 100%;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .home-wrap {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
+}
+
+@media (min-width: 1536px) {
+  .home-wrap {
+    padding-left: 3.5rem;
+    padding-right: 3.5rem;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+@keyframes qc-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.qc-marquee {
+  animation: qc-marquee 36s linear infinite;
 }

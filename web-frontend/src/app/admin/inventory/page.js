@@ -1,132 +1,87 @@
 'use client';
-import { useState, useEffect } from 'react';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { api } from '@/utils/api';
 
 export default function AdminInventoryPage() {
   const [stores, setStores] = useState([]);
-  const [selectedStoreId, setSelectedStoreId] = useState('');
-  const [productId, setProductId] = useState('');
-  const [stock, setStock] = useState('50');
-  const [sellingPriceRupees, setSellingPriceRupees] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Load stores on mount
   useEffect(() => {
-    const fetchStores = async () => {
+    async function load() {
       try {
-        const data = await api('/admin/stores');
+        const data = await api('/admin/inventory');
         setStores(data || []);
-        if (data && data.length > 0) {
-          setSelectedStoreId(data[0]._id);
-        }
       } catch (err) {
-        setError('Failed to load stores');
+        setError(err.message || 'Failed to load inventory');
+      } finally {
+        setLoading(false);
       }
-    };
-    fetchStores();
+    }
+    load();
   }, []);
 
-  const handleUpdateInventory = async (e) => {
-    e.preventDefault();
-    if (!productId.trim()) {
-      alert('Please enter a valid Product ID');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const sellingPricePaise = Math.round(Number(sellingPriceRupees) * 100);
-
-      const payload = {
-        storeId: selectedStoreId,
-        productId: productId.trim(),
-        stock: Number(stock),
-        sellingPricePaise
-      };
-
-      await api('/admin/inventory', {
-        method: 'PUT',
-        body: JSON.stringify(payload)
-      });
-
-      alert('Inventory updated successfully!');
-      setProductId('');
-      setStock('50');
-      setSellingPriceRupees('');
-    } catch (err) {
-      alert(err.message || 'Failed to update inventory');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="max-w-xl mx-auto">
-      <h1 className="text-2xl font-bold text-black mb-6">Manage Store Inventory</h1>
+    <div className="pb-12">
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Inventory</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {loading ? 'Loading...' : `${stores.length} store${stores.length === 1 ? '' : 's'}`}
+          </p>
+        </div>
+        <Link
+          href="/admin/inventory/new"
+          className="shrink-0 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded transition"
+        >
+          Add Inventory
+        </Link>
+      </div>
 
       {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-sm">{error}</div>}
 
-      <form onSubmit={handleUpdateInventory} className="bg-white p-6 rounded-lg shadow border space-y-4">
-        <div>
-          <label className="block text-xs font-medium text-gray-700">Select Store</label>
-          <select
-            value={selectedStoreId}
-            onChange={(e) => setSelectedStoreId(e.target.value)}
-            className="w-full mt-1 p-2 border rounded text-black text-sm bg-white"
-            required
-          >
-            {stores.map((st) => (
-              <option key={st._id} value={st._id}>{st.name} ({st.addressText})</option>
-            ))}
-          </select>
+      {loading ? (
+        <p className="p-6 text-sm text-gray-500 bg-white rounded-lg border">Loading inventory...</p>
+      ) : stores.length === 0 ? (
+        <p className="p-6 text-sm text-gray-500 bg-white rounded-lg border">No inventory yet. Add stock from the button above.</p>
+      ) : (
+        <div className="bg-white rounded-lg shadow-sm border overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left font-medium text-gray-500">Store</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-500">Products</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-500">Categories</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {stores.map((group) => (
+                <tr key={group.store._id}>
+                  <td className="px-4 py-4">
+                    <p className="font-medium text-gray-900">{group.store.name}</p>
+                    <p className="text-gray-500 mt-1">{group.store.addressText}</p>
+                  </td>
+                  <td className="px-4 py-4 text-gray-700">{group.productCount}</td>
+                  <td className="px-4 py-4 text-gray-700">{group.categories.length}</td>
+                  <td className="px-4 py-4">
+                    <div className="flex justify-end">
+                      <Link
+                        href={`/admin/inventory/store/${group.store._id}`}
+                        className="px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 rounded hover:bg-green-100"
+                      >
+                        View
+                      </Link>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-700">Product ID (from Phase 11 creation)</label>
-          <input
-            type="text"
-            value={productId}
-            onChange={(e) => setProductId(e.target.value)}
-            placeholder="e.g. 65f8... (Mongo Product ID)"
-            className="w-full mt-1 p-2 border rounded text-black text-sm"
-            required
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-700">Stock Quantity</label>
-            <input
-              type="number"
-              value={stock}
-              onChange={(e) => setStock(e.target.value)}
-              min={0}
-              className="w-full mt-1 p-2 border rounded text-black text-sm"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700">Selling Price (in Rupees)</label>
-            <input
-              type="number"
-              value={sellingPriceRupees}
-              onChange={(e) => setSellingPriceRupees(e.target.value)}
-              placeholder="e.g. 18"
-              className="w-full mt-1 p-2 border rounded text-black text-sm"
-              required
-            />
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded text-sm font-semibold transition"
-        >
-          {loading ? 'Saving Inventory...' : 'Save Inventory'}
-        </button>
-      </form>
+      )}
     </div>
   );
 }

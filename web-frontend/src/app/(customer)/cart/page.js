@@ -1,38 +1,59 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/utils/api';
+import { getToken, getRole } from '@/utils/auth';
+import { getGuestCart, setGuestQty } from '@/utils/guestCart';
 import { formatRupees } from '@/utils/format';
 import CartItem from '@/components/CartItem';
+
+function guestView(guest) {
+  const items = (guest.items || []).map((item) => ({
+    ...item,
+    totalPaise: item.pricePaise * item.qty,
+  }));
+  const itemTotalPaise = items.reduce((sum, item) => sum + item.totalPaise, 0);
+  return {
+    store: guest.storeName ? { name: guest.storeName } : null,
+    items,
+    itemTotalPaise,
+  };
+}
 
 export default function CartPage() {
   const router = useRouter();
   const [cart, setCart] = useState(null);
+  const [isCustomer, setIsCustomer] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const fetchCart = async () => {
-    try {
-      setLoading(true);
-      const data = await api('/cart');
-      setCart(data);
-    } catch (err) {
-      setError(err.message || 'Failed to load cart');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchCart();
+    const customer = !!getToken() && getRole() === 'customer';
+    setIsCustomer(customer);
+
+    if (!customer) {
+      setCart(guestView(getGuestCart()));
+      setLoading(false);
+      return;
+    }
+
+    api('/cart')
+      .then((data) => setCart(data))
+      .catch((err) => setError(err.message || 'Failed to load cart'))
+      .finally(() => setLoading(false));
   }, []);
 
   const handleUpdateQty = async (productId, newQty) => {
     try {
-      // Qty 0 hone par backend item delete kar deta hai
+      if (!isCustomer) {
+        setCart(guestView(setGuestQty(productId, newQty)));
+        return;
+      }
+
       const updatedCart = await api(`/cart/items/${productId}`, {
         method: 'PATCH',
-        body: JSON.stringify({ qty: newQty })
+        body: JSON.stringify({ qty: newQty }),
       });
       setCart(updatedCart);
     } catch (err) {
@@ -40,24 +61,23 @@ export default function CartPage() {
     }
   };
 
-  if (loading && !cart) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <p className="text-gray-500 font-medium">Loading your cart...</p>
-      </div>
-    );
+  const goCheckout = () => {
+    if (isCustomer) {
+      router.push('/checkout');
+      return;
+    }
+    router.push('/login?next=/checkout');
+  };
+
+  if (loading) {
+    return <p className="text-center text-gray-500 py-16">Loading your cart...</p>;
   }
 
   if (error) {
-    return (
-      <div className="bg-red-50 p-4 rounded-md border border-red-200 text-red-700">
-        <p>{error}</p>
-      </div>
-    );
+    return <div className="bg-red-50 p-4 rounded border border-red-200 text-red-700">{error}</div>;
   }
 
   const items = cart?.items || [];
-  const itemTotalPaise = cart?.itemTotalPaise || 0;
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -90,13 +110,13 @@ export default function CartPage() {
           <div className="bg-white p-4 rounded-lg shadow border flex items-center justify-between">
             <div>
               <p className="text-gray-500 text-sm">Total Amount</p>
-              <p className="text-2xl font-bold text-green-600">{formatRupees(itemTotalPaise)}</p>
+              <p className="text-2xl font-bold text-green-600">{formatRupees(cart.itemTotalPaise || 0)}</p>
             </div>
             <button
-              onClick={() => router.push('/checkout')}
-              className="bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 transition"
+              onClick={goCheckout}
+              className="bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700"
             >
-              Proceed to Checkout
+              {isCustomer ? 'Proceed to Checkout' : 'Login to Checkout'}
             </button>
           </div>
         </div>

@@ -6,17 +6,25 @@ client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 # 1. Mock Database / Stock function jo backend execute karega
 def check_product_stock(product_name: str) -> str:
+    from app.services.db_tools import get_live_product_stock_sync
+
     inventory = {
         "milk": "Yes, 45 packets of fresh milk are available in stock.",
         "shoes": "No, running shoes are currently out of stock.",
-        "ice cream": "Yes, chocolate ice cream is available."
+        "ice cream": "Yes, chocolate ice cream is available.",
     }
+    try:
+        live = get_live_product_stock_sync(product_name)
+        if live and not live.startswith("Database error"):
+            return json.dumps({"stock_info": live})
+    except Exception as e:
+        print(f"Live stock lookup failed: {e}")
+
     result = inventory.get(product_name.lower(), "Product not found in inventory.")
     return json.dumps({"stock_info": result})
-
 def run_tool_assisted_chat(user_message: str):
     # 2. Tools ki list define karna jo OpenAI ko batayenge ki hamare paas yeh functions hain
-        tools = [
+    tools = [
             {
                 "type": "function",
                 "function": {
@@ -42,7 +50,7 @@ def run_tool_assisted_chat(user_message: str):
             messages=[{"role": "user", "content": user_message}],
             tools=tools,
             tool_choice="auto" # LLM khud decide karega ki tool call karna hai ya nahi
-        ]
+        )
 
         response_message = response.choices[0].message
         

@@ -1,6 +1,7 @@
 from fastapi import APIRouter
-from app.schemas import EmbedRequest, EmbedResponse
+from app.schemas import EmbedRequest, EmbedResponse, SearchRequest, SearchResponse
 from app.services.embedding_service import generate_embedding
+from app.services.search_service import semantic_search
 
 router = APIRouter()
 
@@ -13,11 +14,10 @@ def create_embedding(payload: EmbedRequest):
         "dimensions": len(vector)
     }
 
-
 @router.post("/search", response_model=SearchResponse)
 def search_products(payload: SearchRequest):
     results = semantic_search(payload.query, payload.limit)
     return {
         "query": payload.query,
         "results": results
-    }    
+    }

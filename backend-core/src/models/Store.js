@@ -5,6 +5,8 @@ const storeSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     phone: { type: String, required: true, trim: true },
     addressText: { type: String, required: true },
+    description: { type: String, default: '' },
+    images: [{ type: String }],
     location: {
       type: { type: String, enum: ['Point'], default: 'Point' },
       coordinates: { type: [Number], required: true } // [longitude, latitude]

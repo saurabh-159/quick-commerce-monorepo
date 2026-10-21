@@ -22,6 +22,11 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
+        cache-dependency-path: |
+          backend-core/package-lock.json
+          mobile-app/package-lock.json
+          socket-service/package-lock.json
+          web-frontend/package-lock.json
 
     # Step 3: Backend-core dependencies check aur build test
     - name: Test Backend Core
@@ -35,14 +40,20 @@ jobs:
         cd socket-service
         npm ci
 
-    # Step 5: Web-frontend dependencies check aur build test
+    # Step 5: Mobile-app dependencies check
+    - name: Test Mobile App
+      run: |
+        cd mobile-app
+        npm ci
+
+    # Step 6: Web-frontend dependencies check aur build test
     - name: Test Web Frontend
       run: |
         cd web-frontend
         npm ci
         npm run build
 
-    # Step 6: Python AI Service check (Python setup karke requirements test karna)
+    # Step 7: Python AI Service check (Python setup karke requirements test karna)
     - name: Set up Python
       uses: actions/setup-python@v5
       with:

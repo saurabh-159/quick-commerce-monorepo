@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 
 class ETARequest(BaseModel):
@@ -38,15 +38,42 @@ class EmbedRequest(BaseModel):
 class EmbedResponse(BaseModel):
     text: str
     embedding: List[float]
-    dimensions: int    
+    dimensions: int
 
- class AssistantRequest(BaseModel):
+class SearchRequest(BaseModel):
     query: str
+    limit: Optional[int] = 5
+
+class SearchResult(BaseModel):
+    product_id: str
+    name: str
+    category: str
+    score: float
+
+class SearchResponse(BaseModel):
+    query: str
+    results: List[SearchResult]
+
+class AssistantRequest(BaseModel):
+    query: str
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+
+class AssistantCard(BaseModel):
+    type: str  # "store" | "product"
+    id: str
+    title: str
+    subtitle: Optional[str] = None
+    meta: Optional[str] = None
+    href: str
+    store_id: Optional[str] = None
 
 class AssistantResponse(BaseModel):
     query: str
     context_used: List[str]
-    answer: str   
+    answer: str
+    tools_used: Optional[List[str]] = None
+    cards: Optional[List[AssistantCard]] = None
 
 
 class Message(BaseModel):
@@ -54,7 +81,8 @@ class Message(BaseModel):
     content: str
 
 class MemoryChatRequest(BaseModel):
-    messages: List[Message] # Poori chat history
+    messages: List[Message]
+    session_id: Optional[str] = None
 
 class MemoryChatResponse(BaseModel):
     response: str    
@@ -76,3 +104,12 @@ class SupportResponse(BaseModel):
     user_id: str
     query: str
     response: str    
+
+class HealthCheckResponse(BaseModel):
+    status: str = Field(..., description="Service status")
+    message: str = Field(..., description="Detailed message")
+
+class GenericPromptRequest(BaseModel):
+    prompt: str = Field(..., min_length=1, description="User prompt text")
+    temperature: float = Field(0.7, ge=0.0, le=1.0, description="Sampling temperature")
+    system_prompt: Optional[str] = Field(None, description="Optional system instruction")

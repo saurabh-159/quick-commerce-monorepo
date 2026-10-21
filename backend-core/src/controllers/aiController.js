@@ -30,10 +30,10 @@ const aiController = {
   // 3. RAG Shopping Assistant
   async handleAssistantChat(req, res) {
     try {
-      const { query } = req.body;
+      const { query, lat, lng } = req.body;
       if (!query) return res.status(400).json({ error: 'Query is required' });
-
-      const result = await aiService.getAssistantResponse(query);
+  
+      const result = await aiService.getAssistantResponse(query, lat, lng);
       return res.status(200).json(result);
     } catch (error) {
       return res.status(500).json({ error: error.message });
@@ -127,12 +127,13 @@ const aiController = {
   // 10. Order Support AI (RAG + Auth Status)
   async handleOrderSupport(req, res) {
     try {
-      // User authentication middleware se req.user._id mil jayega, warna fallback
-      const userId = req.user ? req.user._id : (req.body.user_id || 'user_123'); 
+      const userId = req.user?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: 'Login required' });
+      }
       const { query } = req.body;
-
       if (!query) return res.status(400).json({ error: 'Query is required' });
-
+  
       const result = await aiService.getOrderSupport(userId, query);
       return res.status(200).json(result);
     } catch (error) {

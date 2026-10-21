@@ -1,21 +1,23 @@
 import os
 import json
 from openai import OpenAI
+from app.services.db_tools import get_latest_order_for_user_sync
 
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-# Mock Database for User Orders
-MOCK_USER_ORDERS = {
-    "user_123": {"order_id": "ORD9988", "item": "Tata Salt 1kg", "status": "Out for delivery, arriving in 8 minutes."},
-    "user_456": {"order_id": "ORD7766", "item": "Fresh Milk", "status": "Packed and ready for dispatch."}
-}
-
-# 1. Tool Function: Live Order Status Fetch karne ke liye
 def get_live_order_status(user_id: str) -> str:
-    order = MOCK_USER_ORDERS.get(user_id)
+    order = get_latest_order_for_user_sync(user_id)
     if not order:
         return json.dumps({"error": "No active order found for this user."})
-    return json.dumps(order)
+
+    items = [i.get("name", "") for i in order.get("items", [])]
+    payload = {
+        "order_id": order.get("orderNumber"),
+        "item": ", ".join(items),
+        "status": order.get("status"),
+        "etaMinutes": order.get("etaMinutes"),
+    }
+    return json.dumps(payload)
 
 def handle_order_support(user_id: str, query: str) -> str:
     # Store Policies (FAQ Context)

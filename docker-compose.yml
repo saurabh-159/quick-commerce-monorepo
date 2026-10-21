@@ -23,11 +23,14 @@ services:
     container_name: qc_backend
     ports:
       - "4000:4000"
+    env_file:
+      - ./backend-core/.env
     environment:
       - PORT=4000
       - MONGO_URI=mongodb://mongodb:27017/quick-commerce
       - REDIS_URL=redis://redis:6379
       - AI_SERVICE_URL=http://ai-service:8000
+      - CLIENT_ORIGIN=http://localhost:3000
     depends_on:
       - mongodb
       - redis
@@ -39,9 +42,12 @@ services:
     container_name: qc_socket
     ports:
       - "5000:5000"
+    env_file:
+      - ./socket-service/.env
     environment:
       - PORT=5000
       - REDIS_URL=redis://redis:6379
+      - CLIENT_ORIGIN=http://localhost:3000
     depends_on:
       - redis
 
@@ -51,8 +57,15 @@ services:
     container_name: qc_ai
     ports:
       - "8000:8000"
+    env_file:
+      - ./ai-service/.env
     environment:
       - PORT=8000
+      - MONGO_URI=mongodb://mongodb:27017/quick-commerce
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - mongodb
+      - redis
 
 volumes:
   mongo_data:

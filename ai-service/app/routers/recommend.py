@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from app.schemas import RecommendRequest, RecommendResponse
 from app.services.recommend_service import get_recommendations
 

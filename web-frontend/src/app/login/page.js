@@ -1,18 +1,21 @@
 'use client';
+
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/utils/api';
 import { saveSession } from '@/utils/auth';
+import { getGuestCart, setGuestQty } from '@/utils/guestCart';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [isRegister, setIsRegister] = useState(false);
+  const searchParams = useSearchParams();
+  const nextParam = searchParams.get('next');
 
-  // Form states
+  const [isLogin, setIsLogin] = useState(true);
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  
+  const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -22,107 +25,148 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      let endpoint = isRegister ? '/auth/register' : '/auth/login';
-      let payload = isRegister 
-        ? { name, phone, password } 
-        : { phone, password };
+      const endpoint = isLogin ? '/auth/login' : '/auth/register';
+      const body = isLogin ? { phone, password } : { name, phone, password, email: email || undefined };
 
-      // API call using Phase 1 helper
       const data = await api(endpoint, {
         method: 'POST',
-        body: JSON.stringify(payload)
+        body: JSON.stringify(body),
       });
 
-      // Session save karo (token, role, user)
-      saveSession({
-        accessToken: data.accessToken,
-        user: data.user
-      });
+      saveSession(data);
 
-      // Role ke hisab se redirect karo
-      if (data.user.role === 'admin') {
-        router.replace('/admin');
+      const role = data.user?.role;
+      let targetPath = '/';
+
+      if (role === 'admin') {
+        targetPath = '/admin';
+      } else if (role === 'delivery_partner') {
+        targetPath = '/rider';
       } else {
-        router.replace('/');
+        if (role === 'customer') {
+          const guestCart = getGuestCart();
+          if (guestCart?.items?.length) {
+            let syncError = '';
+            for (const item of guestCart.items) {
+              try {
+                await api('/cart/items', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    productId: item.productId,
+                    storeId: guestCart.storeId,
+                    qty: item.qty,
+                  }),
+                });
+                setGuestQty(item.productId, 0);
+              } catch (syncErr) {
+                syncError = syncErr.message || 'Failed to sync guest cart';
+              }
+            }
+            if (syncError) {
+              setError(syncError);
+              setLoading(false);
+              return;
+            }
+          }
+        }
+
+        if (nextParam && nextParam.startsWith('/')) {
+          targetPath = nextParam;
+        } else {
+          targetPath = '/';
+        }
       }
+
+      window.location.assign(targetPath);
     } catch (err) {
       setError(err.message || 'Something went wrong');
-    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
-        <h1 className="text-2xl font-bold text-center mb-6 text-black">
-          {isRegister ? 'Create Account' : 'Login to Quick-Commerce'}
-        </h1>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
+          {isLogin ? 'Login to Quick Commerce' : 'Create an Account'}
+        </h2>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-sm">
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {isRegister && (
+          {!isLogin && (
             <div>
-              <label className="block text-sm font-medium text-gray-700">Full Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Aarav Sharma"
-                className="w-full mt-1 p-2 border rounded text-black"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="Enter your name"
               />
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Phone Number (10 digits)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
             <input
               type="text"
               required
-              maxLength={10}
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="7777777777"
-              className="w-full mt-1 p-2 border rounded text-black"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              placeholder="Enter phone number"
             />
           </div>
 
+          {!isLogin && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email (Optional)</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="Enter email"
+              />
+            </div>
+          )}
+
           <div>
-            <label className="block text-sm font-medium text-gray-700">Password</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
             <input
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="********"
-              className="w-full mt-1 p-2 border rounded text-black"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              placeholder="Enter password"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-green-600 text-white p-3 rounded font-semibold hover:bg-green-700 transition"
+            className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-md transition duration-200 disabled:opacity-50"
           >
-            {loading ? 'Please wait...' : (isRegister ? 'Register' : 'Login')}
+            {loading ? 'Please wait...' : isLogin ? 'Login' : 'Register'}
           </button>
         </form>
 
         <div className="mt-4 text-center">
           <button
-            onClick={() => setIsRegister(!isRegister)}
-            className="text-sm text-green-600 hover:underline"
+            onClick={() => setIsLogin(!isLogin)}
+            className="text-sm text-green-600 hover:underline focus:outline-none"
           >
-            {isRegister ? 'Already have an account? Login' : "Don't have an account? Register"}
+            {isLogin ? "Don't have an account? Register" : 'Already have an account? Login'}
           </button>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

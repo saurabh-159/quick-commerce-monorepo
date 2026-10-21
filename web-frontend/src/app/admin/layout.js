@@ -1,8 +1,19 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getToken, getRole } from '@/utils/auth';
-import AdminSidebar from '@/components/AdminSidebar';
+import PortalShell from '@/components/PortalShell';
+
+const links = [
+  { name: 'Dashboard', href: '/admin' },
+  { name: 'Stores', href: '/admin/stores' },
+  { name: 'Categories', href: '/admin/categories' },
+  { name: 'Products', href: '/admin/products' },
+  { name: 'Inventory', href: '/admin/inventory' },
+  { name: 'Riders', href: '/admin/riders' },
+  { name: 'Orders', href: '/admin/orders' },
+];
 
 export default function AdminLayout({ children }) {
   const router = useRouter();
@@ -10,29 +21,27 @@ export default function AdminLayout({ children }) {
 
   useEffect(() => {
     const token = getToken();
-    const role = getRole(); // Ensure we use 'role' instead of 'userRole'
+    const role = getRole();
 
     if (!token || role !== 'admin') {
       router.replace('/login');
-    } else {
-      setAuthorized(true);
+      return;
     }
+
+    setAuthorized(true);
   }, [router]);
 
   if (!authorized) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
-        <p>Loading Admin Portal...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-500">Loading admin...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex bg-gray-100">
-      <AdminSidebar />
-      <main className="flex-1 p-8 overflow-y-auto">
-        {children}
-      </main>
-    </div>
+    <PortalShell title="Admin" homeHref="/admin" links={links}>
+      {children}
+    </PortalShell>
   );
 }

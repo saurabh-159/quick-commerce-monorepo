@@ -9,6 +9,7 @@ const cartRoutes = require('./cart.routes');
 const orderRoutes = require('./order.routes');
 const paymentRoutes = require('./payment.routes');
 const riderRoutes = require('./rider.routes');
+const homeRoutes = require('./home.routes');
 
 router.get('/health', (req, res) => {
   res.status(200).json({
@@ -19,6 +20,7 @@ router.get('/health', (req, res) => {
 });
 
 router.use('/auth', authRoutes);
+router.use('/home', homeRoutes);
 router.use('/stores', storeRoutes);
 router.use('/catalog', catalogRoutes);
 router.use('/admin', adminRoutes);

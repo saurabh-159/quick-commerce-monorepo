@@ -7,6 +7,7 @@ const productSchema = new mongoose.Schema(
     description: { type: String, default: '' },
     category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
     brand: { type: String, default: '' },
+    highlights: [{ type: String }],
     unit: { type: String, required: true }, // e.g. "500g", "1L"
     images: [{ type: String }],
     mrpPaise: { type: Number, required: true }, // Money in paise

@@ -1,23 +1,32 @@
 import os
+import time
 from openai import OpenAI
-from fastapi import HTTPException
+from app.utils.cache import get_cached_ai_response, set_cached_ai_response
+from app.utils.logger import log_ai_execution
 
-# OpenAI client initialize kar rahe hain .env se key utha kar
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-def get_llm_response(message: str, system_prompt: str) -> str:
+def get_llm_response_with_cache(message: str, system_prompt: str) -> str:
+    start = time.perf_counter()
+    cached_response = get_cached_ai_response(message, system_prompt)
+    if cached_response:
+        log_ai_execution("cache", len(message), time.perf_counter() - start)
+        return cached_response
+
     try:
-        # LLM API call with timeout protection
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": message}
+                {"role": "user", "content": message},
             ],
-            timeout=10.0 # 10 seconds timeout safety
+            timeout=10.0,
         )
-        return response.choices[0].message.content.strip()
+        answer = response.choices[0].message.content.strip()
+        set_cached_ai_response(message, answer, expire_seconds=3600, system_prompt=system_prompt)
+        log_ai_execution("gpt-3.5-turbo", len(message), time.perf_counter() - start)
+        return answer
     except Exception as e:
-        print(f"⚠️ LLM API Error: {str(e)}")
-        # Fallback response agar API fail ho jaye ya key na ho
+        print(f"LLM API Error: {e}")
+        log_ai_execution("gpt-3.5-turbo-error", len(message), time.perf_counter() - start)
         return "I am currently experiencing high traffic. How else can I help you with your order?"

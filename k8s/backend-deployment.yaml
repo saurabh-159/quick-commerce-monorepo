@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quick-commerce-backend
+  labels:
+    app: quick-commerce-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: quick-commerce-backend
+  template:
+    metadata:
+      labels:
+        app: quick-commerce-backend
+    spec:
+      containers:
+        - name: quick-commerce-backend
+          image: quick-commerce-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"

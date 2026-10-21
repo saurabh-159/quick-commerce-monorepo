@@ -1,44 +1,81 @@
 'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { logout } from '@/utils/auth';
+import { getToken, getRole, logout } from '@/utils/auth';
+import { guestItemCount } from '@/utils/guestCart';
 
 export default function Navbar() {
-  const router = useRouter();
+  const [token, setToken] = useState(null);
+  const [role, setRole] = useState(null);
+  const [cartCount, setCartCount] = useState(0);
+
+  useEffect(() => {
+    const sync = () => {
+      setToken(getToken());
+      setRole(getRole());
+      setCartCount(guestItemCount());
+    };
+
+    sync();
+    window.addEventListener('qc-auth', sync);
+    window.addEventListener('qc-guest-cart', sync);
+    return () => {
+      window.removeEventListener('qc-auth', sync);
+      window.removeEventListener('qc-guest-cart', sync);
+    };
+  }, []);
 
   const handleLogout = () => {
     logout();
-    router.replace('/login');
+    window.location.assign('/');
   };
 
   return (
-    <nav className="bg-white shadow-md border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center space-x-8">
-            <span className="font-bold text-xl text-green-600">Quick-Commerce</span>
-            <div className="hidden md:flex space-x-4">
-              <Link href="/" className="text-gray-700 hover:text-green-600 px-3 py-2 rounded-md text-sm font-medium">
-                Home
-              </Link>
-              <Link href="/cart" className="text-gray-700 hover:text-green-600 px-3 py-2 rounded-md text-sm font-medium">
-                Cart
-              </Link>
-              <Link href="/orders" className="text-gray-700 hover:text-green-600 px-3 py-2 rounded-md text-sm font-medium">
-                Orders
-              </Link>
-            </div>
-          </div>
-          <div className="flex items-center">
+    <header className="sticky top-0 z-40 border-b border-gray-100 bg-white">
+      <div className="home-wrap flex h-[72px] items-center justify-between">
+        <Link href="/" className="flex items-center gap-2">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#0c831f] text-base font-black text-white">
+            Q
+          </span>
+          <span>
+            <span className="block text-lg font-extrabold leading-none text-[#0c831f]">quick</span>
+            <span className="block text-[10px] font-semibold tracking-[0.14em] text-gray-400">COMMERCE</span>
+          </span>
+        </Link>
+
+        <div className="flex items-center gap-2">
+          <Link href="/help" className="hidden px-3 py-2 text-sm font-semibold text-gray-700 sm:inline">
+            Help
+          </Link>
+          {token && role === 'customer' && (
+            <Link href="/orders" className="hidden px-3 py-2 text-sm font-semibold text-gray-700 sm:inline">
+              Orders
+            </Link>
+          )}
+          <Link
+            href="/cart"
+            className="relative rounded-xl border border-gray-200 px-3 py-2 text-sm font-bold text-gray-800"
+          >
+            Cart
+            {cartCount > 0 && (
+              <span className="ml-2 rounded-full bg-[#0c831f] px-1.5 text-xs text-white">{cartCount}</span>
+            )}
+          </Link>
+          {token ? (
             <button
               onClick={handleLogout}
-              className="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-md text-sm font-medium hover:bg-red-100 transition"
+              className="rounded-xl px-3 py-2 text-sm font-semibold text-gray-600"
             >
               Logout
             </button>
-          </div>
+          ) : (
+            <Link href="/login" className="rounded-xl bg-[#0c831f] px-4 py-2 text-sm font-bold text-white">
+              Login
+            </Link>
+          )}
         </div>
       </div>
-    </nav>
+    </header>
   );
-}     
+}
