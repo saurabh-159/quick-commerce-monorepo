@@ -488,7 +488,7 @@ def tool_execution_node(state: AssistantState) -> Dict[str, Any]:
                         "id": cid,
                         "title": name,
                         "subtitle": f"{cat.get('product_count', 0)} items",
-                        "href": f"/store/{store_id}/category/{c_slug}",
+                        "href": f"/store/{store_id}?category={c_slug}",
                         "store_id": store_id,
                         "image": category_card_image(cat),
                     }
