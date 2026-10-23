@@ -58,25 +58,25 @@ export default function StorePage() {
   const store = page?.store;
 
   return (
-    <div className="home-wrap py-8 text-[#161616]">
-      <Link href="/" className="text-sm text-[#6f6a64]">← Home</Link>
+    <div className="home-wrap py-6 text-brand-text md:py-8">
+      <Link href="/" className="text-sm text-brand-muted">← Home</Link>
 
-      {loading && <div className="mt-8 h-64 animate-pulse rounded-[28px] bg-[#efeae4]" />}
+      {loading && <div className="mt-6 h-48 animate-pulse rounded-[24px] bg-brand-soft md:h-56" />}
       {error && <p className="mt-6 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
       {store && (
-        <div className="mt-6 space-y-12">
-          <header className="grid overflow-hidden rounded-[28px] bg-white md:grid-cols-[1.1fr_0.9fr]">
-            <img src={store.image} alt="" className="h-72 w-full object-cover md:h-full" />
-            <div className="flex flex-col justify-center p-6 md:p-10">
-              <p className="text-[11px] uppercase tracking-[0.22em] text-[#8a837b]">
+        <div className="mt-5 space-y-8 md:space-y-10">
+          <header className="grid overflow-hidden rounded-[24px] bg-white md:h-[240px] md:grid-cols-[0.95fr_1.05fr]">
+            <img src={store.image} alt="" className="h-44 w-full object-cover md:h-full" />
+            <div className="flex flex-col justify-center p-5 md:px-8 md:py-6">
+              <p className="text-[11px] uppercase tracking-[0.22em] text-brand-muted-light">
                 {store.isOpen ? 'Open now' : 'Closed'}
                 {store.inRange ? ` · ${store.etaMinutes} min` : ''}
               </p>
-              <h1 className="mt-3 font-serif text-4xl md:text-5xl">{store.name}</h1>
-              <p className="mt-4 text-sm text-[#6f6a64]">{store.addressText}</p>
+              <h1 className="mt-2 font-sans text-3xl leading-tight md:text-4xl">{store.name}</h1>
+              <p className="mt-2 text-sm text-brand-muted line-clamp-2">{store.addressText}</p>
               {store.distanceKm != null && (
-                <p className="mt-2 text-sm text-[#6f6a64]">
+                <p className="mt-1.5 text-sm text-brand-muted">
                   {store.distanceKm} km from you · {Number(store.lat).toFixed(4)}, {Number(store.lng).toFixed(4)}
                 </p>
               )}
@@ -84,7 +84,7 @@ export default function StorePage() {
                 href={`https://www.google.com/maps?q=${store.lat},${store.lng}`}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-6 w-fit rounded-full border border-[#161616] px-4 py-2 text-sm font-medium"
+                className="mt-4 w-fit rounded-full border border-brand-text px-4 py-2 text-sm font-medium"
               >
                 Open location
               </a>
@@ -95,7 +95,7 @@ export default function StorePage() {
             <div className="flex gap-3 overflow-x-auto pb-1">
               <Link
                 href={`/store/${store.id}`}
-                className={`shrink-0 rounded-full px-4 py-2 text-sm ${category ? 'bg-white text-[#161616]' : 'bg-[#161616] text-white'}`}
+                className={`shrink-0 rounded-full px-4 py-2 text-sm ${category ? 'bg-white text-brand-text' : 'bg-brand-text text-white'}`}
               >
                 All
               </Link>
@@ -103,7 +103,7 @@ export default function StorePage() {
                 <Link
                   key={item.id}
                   href={item.href}
-                  className={`shrink-0 rounded-full px-4 py-2 text-sm ${category === item.slug ? 'bg-[#161616] text-white' : 'bg-white text-[#161616]'}`}
+                  className={`shrink-0 rounded-full px-4 py-2 text-sm ${category === item.slug ? 'bg-brand-text text-white' : 'bg-white text-brand-text'}`}
                 >
                   {item.name} · {item.productCount}
                 </Link>
@@ -122,7 +122,7 @@ export default function StorePage() {
               />
             ))
           ) : (
-            <p className="rounded-[28px] bg-white px-6 py-12 text-center text-sm text-[#6f6a64]">
+            <p className="rounded-[28px] bg-white px-6 py-12 text-center text-sm text-brand-muted">
               {page.message || 'No products in this store.'}
             </p>
           )}

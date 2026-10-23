@@ -31,8 +31,8 @@ export default function CustomerLayout({ children }) {
 
   if (!authorized) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center bg-brand-bg">
+        <p className="text-brand-muted">Loading...</p>
       </div>
     );
   }
@@ -40,9 +40,9 @@ export default function CustomerLayout({ children }) {
   const isWide = pathname === '/' || pathname.startsWith('/store');
 
   return (
-    <div className="min-h-screen bg-[#f6f3ee]">
+    <div className="min-h-screen bg-brand-bg">
       {pathname === '/' && (
-        <div className="overflow-hidden bg-[#161616] text-[11px] uppercase tracking-[0.22em] text-white">
+        <div className="overflow-hidden bg-brand-dark text-[11px] uppercase tracking-[0.22em] text-white">
           <div className="qc-marquee flex w-max py-2">
             {[0, 1].map((copy) => (
               <p key={copy} className="whitespace-nowrap px-4">

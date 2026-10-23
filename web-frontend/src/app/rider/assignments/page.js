@@ -84,7 +84,7 @@ export default function RiderAssignmentsPage() {
                 </span>
                 <Link
                   href={`/rider/orders/${order._id}`}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition"
+                  className="px-4 py-2 bg-brand hover:bg-brand-dark text-white text-sm font-medium rounded-md transition"
                 >
                   Manage Order
                 </Link>

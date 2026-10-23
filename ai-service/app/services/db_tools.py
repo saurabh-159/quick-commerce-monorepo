@@ -60,10 +60,13 @@ def list_active_products_sync() -> list:
                 cat = sync_db.categories.find_one({"_id": cat_id})
                 if cat:
                     category_name = cat.get("name", "General")
+            images = doc.get("images") or []
             products.append({
                 "product_id": str(doc["_id"]),
                 "name": doc.get("name", ""),
                 "category": category_name,
+                "image": images[0] if images else "",
+                "images": images,
             })
         return products if products else FALLBACK_PRODUCTS
     except Exception as e:
@@ -126,6 +129,7 @@ def get_nearby_stores_sync(lat: float, lng: float, limit: int = 10) -> str:
             radius = float(store.get("serviceRadiusKm") or 5)
             is_open = bool(store.get("isOpen", True))
             in_range = is_open and distance <= radius
+            images = store.get("images") or []
             cards.append({
                 "store_id": str(store["_id"]),
                 "name": store.get("name", ""),
@@ -134,6 +138,7 @@ def get_nearby_stores_sync(lat: float, lng: float, limit: int = 10) -> str:
                 "distance_km": round(distance, 1),
                 "service_radius_km": radius,
                 "in_range": in_range,
+                "image": images[0] if images else "",
             })
 
         cards.sort(key=lambda x: x["distance_km"])
@@ -209,11 +214,13 @@ def get_store_categories_sync(store_id: str = None, store_name: str = None, lat:
             cat = sync_db.categories.find_one({"_id": cid, "isActive": True})
             if not cat:
                 continue
+            images = cat.get("images") or []
             categories.append({
                 "category_id": str(cat["_id"]),
                 "name": cat.get("name", ""),
                 "slug": cat.get("slug", ""),
                 "product_count": count,
+                "image": cat.get("imageUrl") or (images[0] if images else ""),
             })
 
         categories.sort(key=lambda x: x["name"])
@@ -319,6 +326,7 @@ def get_category_products_sync(
             })
             if not product:
                 continue
+            images = product.get("images") or []
             products_out.append({
                 "product_id": str(product["_id"]),
                 "name": product.get("name", ""),
@@ -328,6 +336,8 @@ def get_category_products_sync(
                 "description": (product.get("description") or "")[:120],
                 "stock": row.get("stock", 0),
                 "price_rupees": round((row.get("sellingPricePaise") or 0) / 100, 2),
+                "image": images[0] if images else "",
+                "images": images,
             })
             if len(products_out) >= limit:
                 break

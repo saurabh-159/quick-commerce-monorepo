@@ -28,8 +28,8 @@ export default function RiderLayout({ children }) {
 
   if (!authorized) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Loading rider...</p>
+      <div className="min-h-screen flex items-center justify-center bg-brand-bg">
+        <p className="text-brand-muted">Loading rider...</p>
       </div>
     );
   }

@@ -96,7 +96,7 @@ export default function AdminOrdersPage() {
       ) : (
         <div className="bg-white rounded-lg shadow-sm border overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
+            <thead className="bg-brand-bg">
               <tr>
                 <th className="px-6 py-3 text-left font-medium text-gray-500">Order ID</th>
                 <th className="px-6 py-3 text-left font-medium text-gray-500">Customer</th>
@@ -133,7 +133,7 @@ export default function AdminOrdersPage() {
                       <select
                         value={selectedRiders[order._id] || ''}
                         onChange={(e) => handleRiderChange(order._id, e.target.value)}
-                        className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-green-500"
+                        className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-brand"
                       >
                         <option value="">Select rider near shop</option>
                         {ridersNearShop(order).map((rider) => (
@@ -146,7 +146,7 @@ export default function AdminOrdersPage() {
                       </select>
                       <button
                         onClick={() => handleAssign(order._id)}
-                        className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded transition"
+                        className="px-3 py-1 bg-brand hover:bg-brand-dark text-white text-xs font-semibold rounded transition"
                       >
                         Assign
                       </button>

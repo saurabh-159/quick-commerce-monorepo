@@ -25,7 +25,7 @@ export default function CartItem({ item, onUpdateQty }) {
             +
           </button>
         </div>
-        <span className="font-bold text-green-600 w-20 text-right">
+        <span className="font-bold text-brand w-20 text-right">
           {formatRupees(item.totalPaise)}
         </span>
       </div>

@@ -89,12 +89,12 @@ export default function ProductForm({
   };
 
   const fieldClass =
-    'w-full px-3 py-2 border border-gray-300 rounded text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500';
+    'w-full px-3 py-2 border border-gray-300 rounded text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-brand';
 
   return (
     <div className="max-w-3xl">
       <div className="mb-6">
-        <Link href="/admin/products" className="text-sm font-medium text-green-700 hover:underline">
+        <Link href="/admin/products" className="text-sm font-medium text-brand-dark hover:underline">
           ← Back to products
         </Link>
         <h1 className="text-2xl font-bold text-gray-900 mt-2">{heading}</h1>
@@ -150,7 +150,7 @@ export default function ProductForm({
             {(categories || []).length === 0 && (
               <p className="mt-1 text-xs text-gray-500">
                 No categories yet.{' '}
-                <Link href="/admin/categories/new" className="text-green-700 font-medium">
+                <Link href="/admin/categories/new" className="text-brand-dark font-medium">
                   Add a category
                 </Link>
               </p>
@@ -200,7 +200,7 @@ export default function ProductForm({
               type="button"
               onClick={handleGenerateAi}
               disabled={aiLoading || !name.trim() || !category}
-              className="text-xs font-semibold text-green-700 hover:underline disabled:opacity-40"
+              className="text-xs font-semibold text-brand-dark hover:underline disabled:opacity-40"
             >
               {aiLoading ? 'Generating…' : 'Generate with AI'}
             </button>
@@ -232,13 +232,13 @@ export default function ProductForm({
           <button
             type="submit"
             disabled={submitting}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white text-sm font-semibold rounded transition"
+            className="px-4 py-2 bg-brand hover:bg-brand-dark disabled:opacity-60 text-white text-sm font-semibold rounded transition"
           >
             {submitting ? 'Saving...' : submitLabel}
           </button>
           <Link
             href="/admin/products"
-            className="px-4 py-2 border border-gray-300 text-sm font-medium text-gray-700 rounded hover:bg-gray-50"
+            className="px-4 py-2 border border-gray-300 text-sm font-medium text-gray-700 rounded hover:bg-brand-bg"
           >
             Cancel
           </Link>

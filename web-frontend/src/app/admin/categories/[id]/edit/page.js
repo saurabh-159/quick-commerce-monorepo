@@ -59,7 +59,7 @@ export default function EditCategoryPage() {
         <button
           type="button"
           onClick={() => router.push('/admin/categories')}
-          className="text-sm font-medium text-green-700 hover:underline"
+          className="text-sm font-medium text-brand-dark hover:underline"
         >
           Back to categories
         </button>

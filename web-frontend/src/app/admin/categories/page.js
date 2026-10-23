@@ -51,7 +51,7 @@ export default function AdminCategoriesPage() {
         </div>
         <Link
           href="/admin/categories/new"
-          className="shrink-0 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded transition"
+          className="shrink-0 px-4 py-2 bg-brand hover:bg-brand-dark text-white text-sm font-semibold rounded transition"
         >
           Add Category
         </Link>
@@ -67,7 +67,7 @@ export default function AdminCategoriesPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50">
+              <thead className="bg-brand-bg">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium text-gray-500">Name</th>
                   <th className="px-4 py-3 text-left font-medium text-gray-500">Slug</th>
@@ -92,7 +92,7 @@ export default function AdminCategoriesPage() {
                     <td className="px-4 py-4">
                       <span
                         className={`px-2 py-1 text-xs rounded font-semibold ${
-                          category.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                          category.isActive ? 'bg-brand-soft text-brand-dark' : 'bg-gray-100 text-gray-600'
                         }`}
                       >
                         {category.isActive ? 'Active' : 'Inactive'}
@@ -102,7 +102,7 @@ export default function AdminCategoriesPage() {
                       <div className="flex justify-end gap-2">
                         <Link
                           href={`/admin/categories/${category._id}/edit`}
-                          className="px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 rounded hover:bg-green-100"
+                          className="px-3 py-1.5 text-sm font-medium text-brand-dark bg-brand-soft rounded hover:bg-brand-soft"
                         >
                           Edit
                         </Link>

@@ -73,13 +73,13 @@ export default function AdminStoresPage() {
                 setPlacing(false);
               }
             }}
-            className="shrink-0 px-4 py-2 border border-gray-300 text-sm font-semibold text-gray-800 rounded hover:bg-gray-50 disabled:opacity-60"
+            className="shrink-0 px-4 py-2 border border-gray-300 text-sm font-semibold text-gray-800 rounded hover:bg-brand-bg disabled:opacity-60"
           >
             {placing ? 'Placing...' : 'Place riders at all shops'}
           </button>
           <Link
             href="/admin/stores/new"
-            className="shrink-0 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded transition"
+            className="shrink-0 px-4 py-2 bg-brand hover:bg-brand-dark text-white text-sm font-semibold rounded transition"
           >
             Add Store
           </Link>
@@ -87,7 +87,7 @@ export default function AdminStoresPage() {
       </div>
 
       {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-sm">{error}</div>}
-      {notice && <div className="mb-4 p-3 bg-green-100 text-green-800 rounded text-sm">{notice}</div>}
+      {notice && <div className="mb-4 p-3 bg-brand-soft text-brand-dark rounded text-sm">{notice}</div>}
 
       <div className="bg-white rounded-lg shadow-sm border">
         {loading ? (
@@ -97,7 +97,7 @@ export default function AdminStoresPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50">
+              <thead className="bg-brand-bg">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium text-gray-500">Name</th>
                   <th className="px-4 py-3 text-left font-medium text-gray-500">Phone</th>
@@ -126,7 +126,7 @@ export default function AdminStoresPage() {
                     <td className="px-4 py-4">
                       <span
                         className={`px-2 py-1 text-xs rounded font-semibold ${
-                          store.isOpen ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          store.isOpen ? 'bg-brand-soft text-brand-dark' : 'bg-red-100 text-red-800'
                         }`}
                       >
                         {store.isOpen ? 'Open' : 'Closed'}
@@ -156,7 +156,7 @@ export default function AdminStoresPage() {
                         </button>
                         <Link
                           href={`/admin/stores/${store._id}/edit`}
-                          className="px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 rounded hover:bg-green-100"
+                          className="px-3 py-1.5 text-sm font-medium text-brand-dark bg-brand-soft rounded hover:bg-brand-soft"
                         >
                           Edit
                         </Link>

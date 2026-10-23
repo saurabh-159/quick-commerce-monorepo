@@ -34,7 +34,7 @@ export default function AdminInventoryPage() {
         </div>
         <Link
           href="/admin/inventory/new"
-          className="shrink-0 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded transition"
+          className="shrink-0 px-4 py-2 bg-brand hover:bg-brand-dark text-white text-sm font-semibold rounded transition"
         >
           Add Inventory
         </Link>
@@ -49,7 +49,7 @@ export default function AdminInventoryPage() {
       ) : (
         <div className="bg-white rounded-lg shadow-sm border overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
+            <thead className="bg-brand-bg">
               <tr>
                 <th className="px-4 py-3 text-left font-medium text-gray-500">Store</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-500">Products</th>
@@ -70,7 +70,7 @@ export default function AdminInventoryPage() {
                     <div className="flex justify-end">
                       <Link
                         href={`/admin/inventory/store/${group.store._id}`}
-                        className="px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 rounded hover:bg-green-100"
+                        className="px-3 py-1.5 text-sm font-medium text-brand-dark bg-brand-soft rounded hover:bg-brand-soft"
                       >
                         View
                       </Link>

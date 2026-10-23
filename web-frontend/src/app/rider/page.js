@@ -106,7 +106,7 @@ export default function RiderHomePage() {
           <div className="text-right">
             <span
               className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                isOnline ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                isOnline ? 'bg-brand-soft text-brand-dark' : 'bg-gray-100 text-gray-800'
               }`}
             >
               {isOnline ? 'Online' : 'Offline'}
@@ -121,7 +121,7 @@ export default function RiderHomePage() {
               onClick={handleToggleOnline}
               disabled={updatingOnline}
               className={`px-4 py-2 text-sm font-semibold rounded-md transition text-white ${
-                isOnline ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
+                isOnline ? 'bg-red-600 hover:bg-red-700' : 'bg-brand hover:bg-brand-dark'
               } disabled:opacity-50`}
             >
               {updatingOnline ? 'Updating...' : isOnline ? 'Go Offline' : 'Go Online'}

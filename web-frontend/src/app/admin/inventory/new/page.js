@@ -7,7 +7,7 @@ import { api } from '@/utils/api';
 import InventoryLines, { createInventoryLine } from '@/components/InventoryLines';
 
 const fieldClass =
-  'w-full px-3 py-2 border border-gray-300 rounded text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 bg-white';
+  'w-full px-3 py-2 border border-gray-300 rounded text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-brand bg-white';
 
 async function saveStoreLines(storeId, lines) {
   for (let index = 0; index < lines.length; index += 1) {
@@ -86,7 +86,7 @@ export default function NewInventoryPage() {
   return (
     <div className="max-w-3xl pb-12">
       <div className="mb-6">
-        <Link href="/admin/inventory" className="text-sm font-medium text-green-700 hover:underline">
+        <Link href="/admin/inventory" className="text-sm font-medium text-brand-dark hover:underline">
           ← Back to inventory
         </Link>
         <h1 className="text-2xl font-bold text-gray-900 mt-2">Add Inventory</h1>
@@ -116,11 +116,11 @@ export default function NewInventoryPage() {
           <button
             type="submit"
             disabled={submitting || lines.length === 0}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white text-sm font-semibold rounded transition"
+            className="px-4 py-2 bg-brand hover:bg-brand-dark disabled:opacity-60 text-white text-sm font-semibold rounded transition"
           >
             {submitting ? 'Saving...' : `Save ${lines.length} product${lines.length === 1 ? '' : 's'}`}
           </button>
-          <Link href="/admin/inventory" className="px-4 py-2 border border-gray-300 text-sm font-medium text-gray-700 rounded hover:bg-gray-50">
+          <Link href="/admin/inventory" className="px-4 py-2 border border-gray-300 text-sm font-medium text-gray-700 rounded hover:bg-brand-bg">
             Cancel
           </Link>
         </div>

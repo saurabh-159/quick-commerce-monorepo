@@ -29,7 +29,7 @@ export default function Carousel({ children, autoplay = false, label = 'items', 
         type="button"
         aria-label={`Previous ${label}`}
         onClick={() => move(-1)}
-        className="absolute left-3 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white text-lg text-[#161616] shadow-lg md:grid"
+        className="absolute left-3 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white text-lg text-brand-text shadow-lg md:grid"
       >
         ‹
       </button>
@@ -43,7 +43,7 @@ export default function Carousel({ children, autoplay = false, label = 'items', 
         type="button"
         aria-label={`Next ${label}`}
         onClick={() => move(1)}
-        className="absolute right-3 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white text-lg text-[#161616] shadow-lg md:grid"
+        className="absolute right-3 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white text-lg text-brand-text shadow-lg md:grid"
       >
         ›
       </button>

@@ -74,6 +74,7 @@ def cards_from_tool(tool_name: str, result_json: str) -> list:
                 "meta": f"{distance} km" if distance is not None else None,
                 "href": f"/store/{sid}",
                 "store_id": sid,
+                "image": s.get("image") or "",
             })
 
     if tool_name == "get_store_categories":
@@ -92,6 +93,7 @@ def cards_from_tool(tool_name: str, result_json: str) -> list:
                 "meta": f"{count} products" if count is not None else None,
                 "href": f"/store/{store_id}?category={slug}",
                 "store_id": store_id,
+                "image": c.get("image") or "",
             })
 
     if tool_name == "get_category_products":
@@ -115,6 +117,7 @@ def cards_from_tool(tool_name: str, result_json: str) -> list:
                 "meta": " · ".join(meta_parts) if meta_parts else None,
                 "href": f"/store/{store_id}/product/{pid}",
                 "store_id": store_id,
+                "image": p.get("image") or "",
             })
 
     return cards

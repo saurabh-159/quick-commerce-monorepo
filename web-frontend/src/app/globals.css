@@ -2,6 +2,40 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Theme palette (screenshot Row 9 / Palette 1):
+  #FDF4A9 accent · #3B9A9C primary · #41ABAE bright · #245643 dark
+*/
+:root {
+  --qc-accent: #fdf4a9;
+  --qc-primary: #3b9a9c;
+  --qc-primary-bright: #41abae;
+  --qc-primary-dark: #245643;
+
+  --qc-bg: #f3f9f8;
+  --qc-surface: #ffffff;
+  --qc-soft: #e7f3f3;
+  --qc-text: #1a2f2a;
+  --qc-muted: #5c6f6a;
+  --qc-muted-light: #7a8f89;
+  --qc-border: #cfe0de;
+  --qc-warning-bg: #fff8dc;
+  --qc-warning-text: #7a5a10;
+
+  --font-sans: var(--font-poppins), 'Poppins', ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+  }
+
+  body {
+    @apply bg-brand-bg text-brand-text antialiased;
+    font-family: var(--font-sans);
+  }
+}
+
 .store-location-map.leaflet-container {
   z-index: 0;
 }
@@ -47,4 +81,70 @@
 
 .qc-marquee {
   animation: qc-marquee 36s linear infinite;
+}
+
+@keyframes help-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes help-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.help-shell {
+  animation: help-fade-up 0.45s ease-out both;
+}
+
+.help-empty {
+  animation: help-fade-up 0.5s ease-out both;
+}
+
+.help-msg {
+  animation: help-fade-up 0.35s ease-out both;
+}
+
+.help-card {
+  animation: help-fade-up 0.45s ease-out both;
+}
+
+.help-dot {
+  animation: help-dot 1s ease-in-out infinite;
+}
+
+.help-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.help-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.help-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--qc-border) transparent;
+}
+
+.help-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.help-scroll::-webkit-scrollbar-thumb {
+  background: var(--qc-border);
+  border-radius: 999px;
 }

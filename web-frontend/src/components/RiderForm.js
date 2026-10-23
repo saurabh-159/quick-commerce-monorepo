@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { VEHICLES } from '@/utils/riders';
 
 const fieldClass =
-  'w-full px-3 py-2 border border-gray-300 rounded text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500';
+  'w-full px-3 py-2 border border-gray-300 rounded text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-brand';
 
 export default function RiderForm({
   mode = 'create',
@@ -41,7 +41,7 @@ export default function RiderForm({
   return (
     <div className="max-w-2xl">
       <div className="mb-6">
-        <Link href="/admin/riders" className="text-sm font-medium text-green-700 hover:underline">
+        <Link href="/admin/riders" className="text-sm font-medium text-brand-dark hover:underline">
           ← Back to riders
         </Link>
         <h1 className="text-2xl font-bold text-gray-900 mt-2">{heading}</h1>
@@ -111,7 +111,7 @@ export default function RiderForm({
 
         {editing && (
           <label className="flex items-center gap-2 text-sm text-gray-700">
-            <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="rounded border-gray-300 text-green-600" />
+            <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="rounded border-gray-300 text-brand" />
             Account is active and can receive orders
           </label>
         )}
@@ -120,7 +120,7 @@ export default function RiderForm({
           <button
             type="submit"
             disabled={submitting}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded transition disabled:opacity-60"
+            className="px-4 py-2 bg-brand hover:bg-brand-dark text-white text-sm font-semibold rounded transition disabled:opacity-60"
           >
             {submitting ? 'Saving...' : submitLabel}
           </button>

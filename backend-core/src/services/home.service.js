@@ -90,7 +90,7 @@ const getHome = async ({ lat, lng, category, q }) => {
 
   const store = nearest.store;
   const distanceKm = Number(nearest.distanceKm.toFixed(1));
-  const etaMinutes = Math.min(25, Math.max(8, Math.round(distanceKm * 3 + 8)));
+  const etaMinutes = Math.max(10, Math.round(10 + distanceKm * 3));
   const categories = await Category.find({ isActive: true }).sort({ name: 1 }).lean();
 
   const selected = category

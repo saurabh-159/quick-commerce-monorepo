@@ -22,21 +22,11 @@ const createOrderFromCart = async (userId, addressId, paymentMethod) => {
     throw new Error('Store not found');
   }
 
-  // Check if store services the address location
+  // Distance used for ETA only — no hard service-radius block on placement
   const [storeLng, storeLat] = store.location.coordinates;
   const [addrLng, addrLat] = address.location.coordinates;
-  const distance = haversineDistance([storeLng, storeLat], [addrLng, addrLat]);
-
-  if (distance > store.serviceRadiusKm) {
-    const error = new Error('Address is outside store service radius');
-    error.statusCode = 400;
-    error.details = {
-      storeName: store.name,
-      distanceKm: Number(distance.toFixed(1)),
-      serviceRadiusKm: store.serviceRadiusKm,
-    };
-    throw error;
-  }
+  const distanceKm = haversineDistance([storeLng, storeLat], [addrLng, addrLat]);
+  const etaMinutes = Math.max(10, Math.round(10 + distanceKm * 3));
 
   // Verify stock and calculate totals
   let itemTotal = 0;
@@ -101,7 +91,7 @@ const createOrderFromCart = async (userId, addressId, paymentMethod) => {
       { status: 'pending', note: 'Order created' },
       ...(status === 'confirmed' ? [{ status: 'confirmed', note: 'COD order confirmed' }] : [])
     ],
-    etaMinutes: 12
+    etaMinutes
   });
 
   return order;

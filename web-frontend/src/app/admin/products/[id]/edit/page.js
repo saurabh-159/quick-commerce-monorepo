@@ -70,7 +70,7 @@ export default function EditProductPage() {
         <button
           type="button"
           onClick={() => router.push('/admin/products')}
-          className="text-sm font-medium text-green-700 hover:underline"
+          className="text-sm font-medium text-brand-dark hover:underline"
         >
           Back to products
         </button>

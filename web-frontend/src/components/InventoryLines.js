@@ -3,7 +3,7 @@
 import ImagePicker from '@/components/ImagePicker';
 
 const fieldClass =
-  'w-full px-3 py-2 border border-gray-300 rounded text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-green-500 bg-white';
+  'w-full px-3 py-2 border border-gray-300 rounded text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-brand bg-white';
 
 export function createInventoryLine(partial = {}) {
   return {
@@ -42,7 +42,7 @@ export default function InventoryLines({ products, lines, onChange }) {
       {lines.map((line, index) => {
         const lockedProduct = products.find((product) => product._id === line.productId);
         return (
-          <div key={line.key} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+          <div key={line.key} className="border border-gray-200 rounded-lg p-4 bg-brand-bg">
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-semibold text-gray-800">Product {index + 1}</p>
               <button
@@ -129,7 +129,7 @@ export default function InventoryLines({ products, lines, onChange }) {
         type="button"
         onClick={addLine}
         disabled={products.length > 0 && unusedCount === 0}
-        className="px-3 py-2 text-sm font-semibold text-green-700 bg-green-50 rounded hover:bg-green-100 disabled:opacity-60"
+        className="px-3 py-2 text-sm font-semibold text-brand-dark bg-brand-soft rounded hover:bg-brand-soft disabled:opacity-60"
       >
         Add another product
       </button>

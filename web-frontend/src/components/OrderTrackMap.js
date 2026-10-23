@@ -22,7 +22,7 @@ function labeledPin(color, label, place) {
 }
 
 const homeIcon = labeledPin('#2563eb', 'You', 'bottom');
-const storeIcon = labeledPin('#16a34a', 'Shop', 'top');
+const storeIcon = labeledPin('#3b9a9c', 'Shop', 'top');
 const riderIcon = labeledPin('#ea580c', 'Rider', 'right');
 
 export default function OrderTrackMap({ home, store, rider }) {

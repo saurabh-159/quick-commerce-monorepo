@@ -56,7 +56,7 @@ export default function EditRiderPage() {
     return (
       <div className="space-y-3">
         <p className="text-sm text-red-700">{error || 'Rider not found'}</p>
-        <button type="button" onClick={() => router.push('/admin/riders')} className="text-sm font-medium text-green-700 hover:underline">
+        <button type="button" onClick={() => router.push('/admin/riders')} className="text-sm font-medium text-brand-dark hover:underline">
           Back to riders
         </button>
       </div>

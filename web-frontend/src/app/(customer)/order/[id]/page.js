@@ -146,7 +146,7 @@ export default function OrderDetailPage() {
       )}
 
       {order.etaMinutes && (
-        <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-lg flex justify-between items-center text-sm">
+        <div className="bg-brand-soft border border-brand text-brand-dark p-4 rounded-lg flex justify-between items-center text-sm">
           <span>Estimated Delivery Time</span>
           <span className="font-bold">{order.etaMinutes} mins</span>
         </div>

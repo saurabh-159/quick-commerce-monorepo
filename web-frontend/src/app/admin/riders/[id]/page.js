@@ -11,12 +11,12 @@ import StatusBadge from '@/components/StatusBadge';
 
 const LocationPicker = dynamic(() => import('@/components/LocationPicker'), {
   ssr: false,
-  loading: () => <div className="h-64 rounded border border-gray-200 bg-gray-50" />,
+  loading: () => <div className="h-64 rounded border border-gray-200 bg-brand-bg" />,
 });
 
 function Pill({ children, tone }) {
   const tones = {
-    green: 'bg-green-100 text-green-800',
+    green: 'bg-brand-soft text-brand-dark',
     gray: 'bg-gray-100 text-gray-700',
     red: 'bg-red-100 text-red-800',
     amber: 'bg-amber-100 text-amber-800',
@@ -107,7 +107,7 @@ export default function AdminRiderDetailPage() {
     return (
       <div className="space-y-3">
         <p className="text-sm text-red-700">{error || 'Rider not found'}</p>
-        <Link href="/admin/riders" className="text-sm font-medium text-green-700 hover:underline">
+        <Link href="/admin/riders" className="text-sm font-medium text-brand-dark hover:underline">
           Back to riders
         </Link>
       </div>
@@ -121,11 +121,11 @@ export default function AdminRiderDetailPage() {
     <div className="pb-12 space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <Link href="/admin/riders" className="text-sm font-medium text-green-700 hover:underline">
+          <Link href="/admin/riders" className="text-sm font-medium text-brand-dark hover:underline">
             ← Back to riders
           </Link>
           <div className="flex items-center gap-3 mt-2">
-            <span className="h-11 w-11 rounded-full bg-green-100 text-green-800 font-semibold flex items-center justify-center">
+            <span className="h-11 w-11 rounded-full bg-brand-soft text-brand-dark font-semibold flex items-center justify-center">
               {(rider.name || '?').trim().charAt(0).toUpperCase()}
             </span>
             <div>
@@ -140,7 +140,7 @@ export default function AdminRiderDetailPage() {
         </div>
         <Link
           href={`/admin/riders/${rider._id}/edit`}
-          className="shrink-0 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded transition"
+          className="shrink-0 px-4 py-2 bg-brand hover:bg-brand-dark text-white text-sm font-semibold rounded transition"
         >
           Edit
         </Link>
@@ -184,7 +184,7 @@ export default function AdminRiderDetailPage() {
               onClick={handleActiveToggle}
               disabled={saving}
               className={`px-3 py-1.5 text-sm font-medium rounded disabled:opacity-60 ${
-                rider.isActive ? 'text-red-700 bg-red-50 hover:bg-red-100' : 'text-green-700 bg-green-50 hover:bg-green-100'
+                rider.isActive ? 'text-red-700 bg-red-50 hover:bg-red-100' : 'text-brand-dark bg-brand-soft hover:bg-brand-soft'
               }`}
             >
               {saving ? 'Saving...' : rider.isActive ? 'Deactivate' : 'Activate'}
@@ -199,7 +199,7 @@ export default function AdminRiderDetailPage() {
                 Force offline
               </button>
             )}
-            <Link href="/admin/orders" className="px-3 py-1.5 text-sm font-medium text-green-700 hover:underline">
+            <Link href="/admin/orders" className="px-3 py-1.5 text-sm font-medium text-brand-dark hover:underline">
               Assign from orders
             </Link>
           </div>
@@ -235,7 +235,7 @@ export default function AdminRiderDetailPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50">
+              <thead className="bg-brand-bg">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium text-gray-500">Order</th>
                   <th className="px-4 py-3 text-left font-medium text-gray-500">Customer</th>

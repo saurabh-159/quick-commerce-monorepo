@@ -32,48 +32,48 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-gray-100 bg-white">
+    <header className="sticky top-0 z-40 border-b border-brand-border bg-brand-surface">
       <div className="home-wrap flex h-[72px] items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#0c831f] text-base font-black text-white">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand text-base font-black text-white">
             Q
           </span>
           <span>
-            <span className="block text-lg font-extrabold leading-none text-[#0c831f]">quick</span>
-            <span className="block text-[10px] font-semibold tracking-[0.14em] text-gray-400">COMMERCE</span>
+            <span className="block text-lg font-extrabold leading-none text-brand">quick</span>
+            <span className="block text-[10px] font-semibold tracking-[0.14em] text-brand-muted-light">COMMERCE</span>
           </span>
         </Link>
 
         <div className="flex items-center gap-1 sm:gap-2">
           <Link
             href="/help"
-            className="whitespace-nowrap px-1.5 py-2 text-xs font-semibold text-gray-700 sm:px-3 sm:text-sm"
+            className="whitespace-nowrap px-1.5 py-2 text-xs font-semibold text-brand-text sm:px-3 sm:text-sm"
           >
             Quick Shopping
           </Link>
           {token && role === 'customer' && (
-            <Link href="/orders" className="hidden px-3 py-2 text-sm font-semibold text-gray-700 sm:inline">
+            <Link href="/orders" className="hidden px-3 py-2 text-sm font-semibold text-brand-text sm:inline">
               Orders
             </Link>
           )}
           <Link
             href="/cart"
-            className="relative whitespace-nowrap rounded-xl border border-gray-200 px-2.5 py-2 text-sm font-bold text-gray-800 sm:px-3"
+            className="relative whitespace-nowrap rounded-xl border border-brand-border px-2.5 py-2 text-sm font-bold text-brand-text sm:px-3"
           >
             Cart
             {cartCount > 0 && (
-              <span className="ml-2 rounded-full bg-[#0c831f] px-1.5 text-xs text-white">{cartCount}</span>
+              <span className="ml-2 rounded-full bg-brand px-1.5 text-xs text-white">{cartCount}</span>
             )}
           </Link>
           {token ? (
             <button
               onClick={handleLogout}
-              className="whitespace-nowrap rounded-xl px-2.5 py-2 text-sm font-semibold text-gray-600 sm:px-3"
+              className="whitespace-nowrap rounded-xl px-2.5 py-2 text-sm font-semibold text-brand-muted sm:px-3"
             >
               Logout
             </button>
           ) : (
-            <Link href="/login" className="whitespace-nowrap rounded-xl bg-[#0c831f] px-3 py-2 text-sm font-bold text-white sm:px-4">
+            <Link href="/login" className="whitespace-nowrap rounded-xl bg-brand px-3 py-2 text-sm font-bold text-white sm:px-4">
               Login
             </Link>
           )}

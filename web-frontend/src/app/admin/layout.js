@@ -33,8 +33,8 @@ export default function AdminLayout({ children }) {
 
   if (!authorized) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-gray-500">Loading admin...</p>
+      <div className="min-h-screen flex items-center justify-center bg-brand-bg">
+        <p className="text-brand-muted">Loading admin...</p>
       </div>
     );
   }

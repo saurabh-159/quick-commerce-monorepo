@@ -116,7 +116,7 @@ export default function ProductDetail() {
     }
   };
 
-  if (loading) return <div className="home-wrap py-16 text-sm text-[#6f6a64]">Loading product...</div>;
+  if (loading) return <div className="home-wrap py-16 text-sm text-brand-muted">Loading product...</div>;
   if (error) return <div className="home-wrap py-16 text-sm text-red-700">{error}</div>;
   if (!data) return null;
 
@@ -124,8 +124,8 @@ export default function ProductDetail() {
   const images = product.images?.length ? product.images : [product.image].filter(Boolean);
 
   return (
-    <div className="home-wrap py-8 text-[#161616]">
-      <p className="text-sm text-[#6f6a64]">
+    <div className="home-wrap py-8 text-brand-text">
+      <p className="text-sm text-brand-muted">
         <Link href="/">Home</Link>
         <span> / </span>
         <Link href={`/store/${store.id}`}>{store.name}</Link>
@@ -137,13 +137,13 @@ export default function ProductDetail() {
         )}
       </p>
 
-      <div className="mt-6 grid gap-8 lg:grid-cols-2">
+      <div className="mt-6 grid gap-8 lg:grid-cols-2 lg:items-start">
         <div>
-          <div className="overflow-hidden rounded-[28px] bg-[#efeae4]">
+          <div className="h-72 overflow-hidden rounded-[24px] bg-brand-soft sm:h-80 md:h-[360px] lg:h-[400px]">
             {activeImage ? (
-              <img src={activeImage} alt={product.name} className="aspect-square w-full object-cover" />
+              <img src={activeImage} alt={product.name} className="h-full w-full object-cover" />
             ) : (
-              <div className="grid aspect-square place-items-center text-sm text-[#8a837b]">No image</div>
+              <div className="grid h-full place-items-center text-sm text-brand-muted-light">No image</div>
             )}
           </div>
           {images.length > 1 && (
@@ -158,22 +158,22 @@ export default function ProductDetail() {
         </div>
 
         <div className="lg:py-4">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-[#8a837b]">{product.brand || product.category?.name}</p>
-          <h1 className="mt-3 font-serif text-4xl md:text-5xl">{product.name}</h1>
-          <p className="mt-4 text-sm text-[#6f6a64]">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-brand-muted-light">{product.brand || product.category?.name}</p>
+          <h1 className="mt-3 font-sans text-3xl leading-tight md:text-4xl">{product.name}</h1>
+          <p className="mt-4 text-sm text-brand-muted">
             {product.unit} · {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
             {store.distanceKm != null ? ` · ${store.distanceKm} km · ${store.etaMinutes} min` : ''}
           </p>
           <div className="mt-5 flex items-baseline gap-3">
             <span className="text-2xl font-semibold">{formatPrice(product.sellingPricePaise)}</span>
             {product.mrpPaise > product.sellingPricePaise && (
-              <span className="text-[#a39d96] line-through">{formatPrice(product.mrpPaise)}</span>
+              <span className="text-brand-muted-light line-through">{formatPrice(product.mrpPaise)}</span>
             )}
             {product.discountPercent > 0 && <span>{product.discountPercent}% off</span>}
           </div>
-          {product.description && <p className="mt-6 max-w-xl text-sm leading-6 text-[#6f6a64]">{product.description}</p>}
+          {product.description && <p className="mt-6 max-w-xl text-sm leading-6 text-brand-muted">{product.description}</p>}
           {product.highlights?.length > 0 && (
-            <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-[#6f6a64]">
+            <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-brand-muted">
               {product.highlights.map((line) => (
                 <li key={line}>{line}</li>
               ))}
@@ -183,11 +183,11 @@ export default function ProductDetail() {
             type="button"
             onClick={addToCart}
             disabled={adding || product.stock === 0}
-            className="mt-8 rounded-full bg-[#161616] px-6 py-3 text-sm font-semibold text-white disabled:opacity-40"
+            className="mt-8 rounded-full bg-brand-text px-6 py-3 text-sm font-semibold text-white disabled:opacity-40"
           >
             {product.stock === 0 ? 'Out of stock' : adding ? 'Adding' : added ? 'Added to cart' : 'Add to cart'}
           </button>
-          <p className="mt-4 text-sm text-[#6f6a64]">From {store.name} · {store.addressText}</p>
+          <p className="mt-4 text-sm text-brand-muted">From {store.name} · {store.addressText}</p>
         </div>
       </div>
 
@@ -200,7 +200,7 @@ export default function ProductDetail() {
 
       {related?.length > 0 && (
         <section className="mt-16">
-          <h2 className="font-serif text-3xl">More in {product.category?.name || 'this store'}</h2>
+          <h2 className="font-sans text-3xl">More in {product.category?.name || 'this store'}</h2>
           <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
             {related.map((item) => (
               <ProductCard key={item.id} product={item} storeId={store.id} storeName={store.name} />

@@ -110,7 +110,7 @@ export default function RiderOrderDetailPage() {
             <button
               onClick={handleNextStatus}
               disabled={updating}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-md transition disabled:opacity-50 uppercase"
+              className="px-4 py-2 bg-brand hover:bg-brand-dark text-white text-sm font-semibold rounded-md transition disabled:opacity-50 uppercase"
             >
               {updating ? 'Updating...' : `Mark as ${nextStatus.replace('_', ' ')}`}
             </button>

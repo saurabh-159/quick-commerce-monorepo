@@ -7,7 +7,7 @@ import { lookupAddress } from '@/utils/geocode';
 
 const LocationPicker = dynamic(() => import('@/components/LocationPicker'), {
   ssr: false,
-  loading: () => <div className="h-64 rounded border border-gray-200 bg-gray-50" />,
+  loading: () => <div className="h-64 rounded border border-gray-200 bg-brand-bg" />,
 });
 
 const FALLBACK = { lat: '28.613900', lng: '77.209000' };
@@ -139,14 +139,14 @@ export default function AddressForm({ onAddressCreated }) {
         <button
           type="button"
           onClick={placeCurrentLocation}
-          className="shrink-0 px-3 py-1.5 border border-gray-300 text-xs font-medium text-gray-700 rounded hover:bg-gray-50"
+          className="shrink-0 px-3 py-1.5 border border-gray-300 text-xs font-medium text-gray-700 rounded hover:bg-brand-bg"
         >
           Use current location
         </button>
       </div>
 
       {locating && !lat ? (
-        <div className="h-64 rounded border border-gray-200 bg-gray-50 flex items-center justify-center text-sm text-gray-500">
+        <div className="h-64 rounded border border-gray-200 bg-brand-bg flex items-center justify-center text-sm text-gray-500">
           Waiting for location...
         </div>
       ) : (

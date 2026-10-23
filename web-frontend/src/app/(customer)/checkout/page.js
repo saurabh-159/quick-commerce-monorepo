@@ -157,7 +157,7 @@ export default function CheckoutPage() {
           <h2 className="text-lg font-semibold text-gray-800">Delivery Address</h2>
           <button
             onClick={() => setShowNewAddressForm(!showNewAddressForm)}
-            className="text-sm text-green-600 font-medium hover:underline"
+            className="text-sm text-brand font-medium hover:underline"
           >
             {showNewAddressForm ? 'Cancel' : '+ Add New Address'}
           </button>
@@ -174,7 +174,7 @@ export default function CheckoutPage() {
                 key={addr._id}
                 onClick={() => setSelectedAddressId(addr._id)}
                 className={`p-4 rounded-lg border cursor-pointer transition ${
-                  selectedAddressId === addr._id ? 'border-green-600 bg-green-50' : 'border-gray-200 hover:border-gray-300'
+                  selectedAddressId === addr._id ? 'border-brand bg-brand-soft' : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
                 <p className="font-semibold text-sm text-gray-800">{addr.label || 'Address'}</p>
@@ -190,26 +190,26 @@ export default function CheckoutPage() {
       <div className="bg-white rounded-lg shadow-sm border p-6 space-y-4">
         <h2 className="text-lg font-semibold text-gray-800">Payment Method</h2>
         <div className="flex space-x-4">
-          <label className={`flex items-center space-x-2 p-3 border rounded-lg cursor-pointer flex-1 ${paymentMethod === 'cod' ? 'border-green-600 bg-green-50' : 'border-gray-200'}`}>
+          <label className={`flex items-center space-x-2 p-3 border rounded-lg cursor-pointer flex-1 ${paymentMethod === 'cod' ? 'border-brand bg-brand-soft' : 'border-gray-200'}`}>
             <input
               type="radio"
               name="paymentMethod"
               value="cod"
               checked={paymentMethod === 'cod'}
               onChange={() => setPaymentMethod('cod')}
-              className="text-green-600 focus:ring-green-500"
+              className="text-brand focus:ring-brand"
             />
             <span className="text-sm font-medium text-gray-800">Cash on Delivery (COD)</span>
           </label>
 
-          <label className={`flex items-center space-x-2 p-3 border rounded-lg cursor-pointer flex-1 ${paymentMethod === 'online' ? 'border-green-600 bg-green-50' : 'border-gray-200'}`}>
+          <label className={`flex items-center space-x-2 p-3 border rounded-lg cursor-pointer flex-1 ${paymentMethod === 'online' ? 'border-brand bg-brand-soft' : 'border-gray-200'}`}>
             <input
               type="radio"
               name="paymentMethod"
               value="online"
               checked={paymentMethod === 'online'}
               onChange={() => setPaymentMethod('online')}
-              className="text-green-600 focus:ring-green-500"
+              className="text-brand focus:ring-brand"
             />
             <span className="text-sm font-medium text-gray-800">Online Payment (Mock)</span>
           </label>
@@ -237,7 +237,7 @@ export default function CheckoutPage() {
         <button
           onClick={handlePlaceOrder}
           disabled={submitting || items.length === 0 || !selectedAddressId}
-          className="w-full mt-4 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-md transition disabled:opacity-50 text-center"
+          className="w-full mt-4 py-3 bg-brand hover:bg-brand-dark text-white font-semibold rounded-md transition disabled:opacity-50 text-center"
         >
           {submitting ? 'Placing Order...' : 'Place Order'}
         </button>

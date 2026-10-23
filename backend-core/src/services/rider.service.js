@@ -108,37 +108,48 @@ const assignNearestRiderToOrder = async (orderId) => {
     isActive: { $ne: false },
     'rider.isOnline': true
   });
+  // No online partners: leave order as confirmed for admin manual assign
   if (!onlineRiders || onlineRiders.length === 0) return;
 
-  let nearestRider = null;
-  let minDistance = Infinity;
+  let nearestInRadius = null;
+  let minInRadius = Infinity;
+  let nearestAny = null;
+  let minAny = Infinity;
 
   for (let i = 0; i < onlineRiders.length; i++) {
     const rider = onlineRiders[i];
-    const riderLng = rider.rider.currentLocation.coordinates[0];
-    const riderLat = rider.rider.currentLocation.coordinates[1];
-    const distance = haversineDistance([storeLng, storeLat], [riderLng, riderLat]);
+    const coords = rider.rider?.currentLocation?.coordinates;
+    if (!coords) continue;
 
-    if (distance <= 7 && distance < minDistance) {
-      minDistance = distance;
-      nearestRider = rider;
+    const distance = haversineDistance([storeLng, storeLat], [coords[0], coords[1]]);
+
+    if (distance < minAny) {
+      minAny = distance;
+      nearestAny = rider;
+    }
+
+    if (distance <= 7 && distance < minInRadius) {
+      minInRadius = distance;
+      nearestInRadius = rider;
     }
   }
 
-  if (nearestRider) {
-    order.rider = nearestRider._id;
-    order.status = 'assigned';
-    order.statusHistory.push({ status: 'assigned', note: `Assigned to rider ${nearestRider.name}` });
-    await order.save();
+  // Prefer within 7 km; else nearest online partner (no hard maxDistance / no throw)
+  const nearestRider = nearestInRadius || nearestAny;
+  if (!nearestRider) return;
 
-    await publishEvent({
-      type: 'order:assigned',
-      orderId: order._id,
-      userId: order.user,
-      riderId: nearestRider._id,
-      status: 'assigned'
-    });
-  }
+  order.rider = nearestRider._id;
+  order.status = 'assigned';
+  order.statusHistory.push({ status: 'assigned', note: `Assigned to rider ${nearestRider.name}` });
+  await order.save();
+
+  await publishEvent({
+    type: 'order:assigned',
+    orderId: order._id,
+    userId: order.user,
+    riderId: nearestRider._id,
+    status: 'assigned'
+  });
 };
 
 const updateRiderOnlineStatus = async (riderId, isOnline) => {

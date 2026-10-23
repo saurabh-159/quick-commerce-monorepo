@@ -140,7 +140,7 @@ export default function EditInventoryPage() {
         <button
           type="button"
           onClick={() => router.push('/admin/inventory')}
-          className="text-sm font-medium text-green-700 hover:underline"
+          className="text-sm font-medium text-brand-dark hover:underline"
         >
           Back to inventory
         </button>
@@ -151,7 +151,7 @@ export default function EditInventoryPage() {
   return (
     <div className="max-w-3xl pb-12">
       <div className="mb-6">
-        <Link href="/admin/inventory" className="text-sm font-medium text-green-700 hover:underline">
+        <Link href="/admin/inventory" className="text-sm font-medium text-brand-dark hover:underline">
           ← Back to inventory
         </Link>
         <h1 className="text-2xl font-bold text-gray-900 mt-2">Edit {storeName}</h1>
@@ -174,11 +174,11 @@ export default function EditInventoryPage() {
           <button
             type="submit"
             disabled={submitting || (lines.length === 0 && removed.length === 0)}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white text-sm font-semibold rounded transition"
+            className="px-4 py-2 bg-brand hover:bg-brand-dark disabled:opacity-60 text-white text-sm font-semibold rounded transition"
           >
             {submitting ? 'Saving...' : 'Save changes'}
           </button>
-          <Link href="/admin/inventory" className="px-4 py-2 border border-gray-300 text-sm font-medium text-gray-700 rounded hover:bg-gray-50">
+          <Link href="/admin/inventory" className="px-4 py-2 border border-gray-300 text-sm font-medium text-gray-700 rounded hover:bg-brand-bg">
             Cancel
           </Link>
         </div>

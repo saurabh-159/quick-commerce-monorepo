@@ -23,7 +23,7 @@ function matchesFilter(rider, filter) {
 
 function Pill({ children, tone }) {
   const tones = {
-    green: 'bg-green-100 text-green-800',
+    green: 'bg-brand-soft text-brand-dark',
     gray: 'bg-gray-100 text-gray-700',
     red: 'bg-red-100 text-red-800',
     amber: 'bg-amber-100 text-amber-800',
@@ -95,7 +95,7 @@ export default function AdminRidersPage() {
         </div>
         <Link
           href="/admin/riders/new"
-          className="shrink-0 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded transition"
+          className="shrink-0 px-4 py-2 bg-brand hover:bg-brand-dark text-white text-sm font-semibold rounded transition"
         >
           Add Rider
         </Link>
@@ -119,7 +119,7 @@ export default function AdminRidersPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search name, phone, or email"
-            className="w-full sm:max-w-xs px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-green-500"
+            className="w-full sm:max-w-xs px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand"
           />
           <div className="flex flex-wrap gap-2">
             {FILTERS.map((item) => (
@@ -128,7 +128,7 @@ export default function AdminRidersPage() {
                 type="button"
                 onClick={() => setFilter(item.id)}
                 className={`px-3 py-1.5 rounded text-xs font-semibold ${
-                  filter === item.id ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  filter === item.id ? 'bg-brand text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
                 {item.label}
@@ -146,7 +146,7 @@ export default function AdminRidersPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50">
+              <thead className="bg-brand-bg">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium text-gray-500">Rider</th>
                   <th className="px-4 py-3 text-left font-medium text-gray-500">Phone</th>
@@ -162,7 +162,7 @@ export default function AdminRidersPage() {
                   <tr key={rider._id}>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
-                        <span className="h-9 w-9 rounded-full bg-green-100 text-green-800 text-sm font-semibold flex items-center justify-center">
+                        <span className="h-9 w-9 rounded-full bg-brand-soft text-brand-dark text-sm font-semibold flex items-center justify-center">
                           {(rider.name || '?').trim().charAt(0).toUpperCase()}
                         </span>
                         <div>
@@ -198,7 +198,7 @@ export default function AdminRidersPage() {
                         </Link>
                         <Link
                           href={`/admin/riders/${rider._id}/edit`}
-                          className="px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 rounded hover:bg-green-100"
+                          className="px-3 py-1.5 text-sm font-medium text-brand-dark bg-brand-soft rounded hover:bg-brand-soft"
                         >
                           Edit
                         </Link>

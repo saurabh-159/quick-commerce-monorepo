@@ -22,7 +22,7 @@ function toPublicStore(store, distanceKm) {
     lat: latitude,
     lng: longitude,
     distanceKm: Number(distanceKm.toFixed(1)),
-    etaMinutes: Math.min(45, Math.max(8, Math.round(distanceKm * 3 + 8))),
+    etaMinutes: Math.max(10, Math.round(10 + distanceKm * 3)),
     inRange,
     serviceRadiusKm: radius
   };
@@ -38,8 +38,13 @@ const listStoreDirectory = async (lat, lng) => {
     return toPublicStore(store, distance);
   });
   cards.sort((a, b) => a.distanceKm - b.distanceKm);
+
+  const inRadius = cards.filter((store) => store.inRange);
+  // Prefer in-radius stores; if none, fall back to nearest open stores (no empty screen)
+  const nearby = inRadius.length ? inRadius : cards.filter((store) => store.isOpen);
+
   return {
-    nearby: cards.filter((store) => store.inRange),
+    nearby,
     stores: cards
   };
 };
@@ -48,31 +53,39 @@ const findNearestStore = async (lat, lng) => {
   const latitude = parseFloat(lat);
   const longitude = parseFloat(lng);
 
-  // Find stores within max possible radius or check all active stores using Haversine/MongoDB geospatial
   const stores = await Store.find({ isOpen: true });
   if (!stores || stores.length === 0) {
     throw new Error('No active stores available');
   }
 
-  let nearestStore = null;
-  let minDistance = Infinity;
+  let nearestInRadius = null;
+  let minInRadius = Infinity;
+  let nearestAny = null;
+  let minAny = Infinity;
 
   for (const store of stores) {
     const storeLng = store.location.coordinates[0];
     const storeLat = store.location.coordinates[1];
     const distance = haversineDistance([longitude, latitude], [storeLng, storeLat]);
+    const radius = store.serviceRadiusKm || 5;
 
-    if (distance <= store.serviceRadiusKm && distance < minDistance) {
-      minDistance = distance;
-      nearestStore = store;
+    if (distance < minAny) {
+      minAny = distance;
+      nearestAny = store;
+    }
+
+    if (distance <= radius && distance < minInRadius) {
+      minInRadius = distance;
+      nearestInRadius = store;
     }
   }
 
-  if (!nearestStore) {
-    throw new Error('Not serviceable at this location');
+  // Prefer service radius; fall back to nearest open store so location is never "unserviceable"
+  if (nearestInRadius) {
+    return { store: nearestInRadius, distanceKm: minInRadius };
   }
 
-  return { store: nearestStore, distanceKm: minDistance };
+  return { store: nearestAny, distanceKm: minAny };
 };
 
 const createStore = async (storeData) => {

@@ -61,7 +61,7 @@ export default function EditStorePage() {
     return (
       <div className="space-y-3">
         <p className="text-sm text-red-700">{error || 'Store not found'}</p>
-        <button type="button" onClick={() => router.push('/admin/stores')} className="text-sm font-medium text-green-700 hover:underline">
+        <button type="button" onClick={() => router.push('/admin/stores')} className="text-sm font-medium text-brand-dark hover:underline">
           Back to stores
         </button>
       </div>

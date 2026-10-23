@@ -60,13 +60,14 @@ class AssistantRequest(BaseModel):
     lng: Optional[float] = None
 
 class AssistantCard(BaseModel):
-    type: str  # "store" | "product"
+    type: str  # "store" | "product" | "category"
     id: str
     title: str
     subtitle: Optional[str] = None
     meta: Optional[str] = None
     href: str
     store_id: Optional[str] = None
+    image: Optional[str] = None
 
 class AssistantResponse(BaseModel):
     query: str

@@ -88,7 +88,7 @@ export default function CartPage() {
           <p className="text-gray-500 mb-4">Your cart is empty.</p>
           <button
             onClick={() => router.push('/')}
-            className="bg-green-600 text-white px-4 py-2 rounded font-semibold hover:bg-green-700"
+            className="bg-brand text-white px-4 py-2 rounded font-semibold hover:bg-brand-dark"
           >
             Browse Products
           </button>
@@ -110,11 +110,11 @@ export default function CartPage() {
           <div className="bg-white p-4 rounded-lg shadow border flex items-center justify-between">
             <div>
               <p className="text-gray-500 text-sm">Total Amount</p>
-              <p className="text-2xl font-bold text-green-600">{formatRupees(cart.itemTotalPaise || 0)}</p>
+              <p className="text-2xl font-bold text-brand">{formatRupees(cart.itemTotalPaise || 0)}</p>
             </div>
             <button
               onClick={goCheckout}
-              className="bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700"
+              className="bg-brand text-white px-6 py-3 rounded-lg font-bold hover:bg-brand-dark"
             >
               {isCustomer ? 'Proceed to Checkout' : 'Login to Checkout'}
             </button>

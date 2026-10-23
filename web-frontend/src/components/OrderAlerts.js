@@ -140,7 +140,7 @@ export default function OrderAlerts() {
           <button
             type="button"
             onClick={() => router.push(`/order/${alert.orderId}`)}
-            className="mt-3 text-xs font-semibold text-green-700 hover:underline"
+            className="mt-3 text-xs font-semibold text-brand-dark hover:underline"
           >
             View order
           </button>
