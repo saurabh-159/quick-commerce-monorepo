@@ -1,4 +1,5 @@
 import json
+import logging
 import math
 import os
 from typing import Any, Dict, List, Optional, TypedDict
@@ -291,7 +292,7 @@ def agent_decision_node(state: AssistantState) -> Dict[str, Any]:
 
     try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": raw_query},
@@ -314,6 +315,7 @@ def agent_decision_node(state: AssistantState) -> Dict[str, Any]:
 
         direct_answer = choice.content or ""
     except Exception:
+        logging.exception("assistant model call failed")
         tool_calls = []
         direct_answer = "Main aapki shopping me help karne ke liye yahan hoon! Aapko Grocery, Snacks, ya Pharmacy me se kya chahiye?"
 
@@ -580,7 +582,7 @@ def final_answer_node(state: AssistantState) -> Dict[str, Any]:
 
     try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[{"role": "system", "content": system_prompt}],
             temperature=0.4,
             timeout=8.0,

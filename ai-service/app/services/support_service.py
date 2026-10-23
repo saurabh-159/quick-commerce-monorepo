@@ -58,7 +58,7 @@ def handle_order_support(user_id: str, query: str) -> str:
 
     try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo-0613",
+            model="gpt-4o-mini",
             messages=messages,
             tools=tools,
             tool_choice="auto"
@@ -83,7 +83,7 @@ def handle_order_support(user_id: str, query: str) -> str:
                 })
 
                 second_response = client.chat.completions.create(
-                    model="gpt-3.5-turbo-0613",
+                    model="gpt-4o-mini",
                     messages=messages
                 )
                 return second_response.choices[0].message.content.strip()

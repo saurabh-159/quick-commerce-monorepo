@@ -16,7 +16,7 @@ def chat_with_memory(messages: list, session_id: str = None) -> str:
             formatted_messages = incoming
 
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=formatted_messages,
         )
         answer = response.choices[0].message.content.strip()

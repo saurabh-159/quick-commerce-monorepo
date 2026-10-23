@@ -29,7 +29,7 @@ def run_agent_with_tools(user_message: str):
 
     # Step 2: User ka message OpenAI ko bhejna sath mein tools ki list dekar
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[{"role": "user", "content": user_message}],
         tools=tools,
         tool_choice="auto", # AI khud decide karega ki tool use karna hai ya nahi
@@ -50,7 +50,7 @@ def run_agent_with_tools(user_message: str):
 
             # Step 4: Tool ka result wapas OpenAI ko dena taaki wo user ko final English mein jawaab de sake
             second_response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "user", "content": user_message},
                     response_message,

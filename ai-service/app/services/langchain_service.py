@@ -6,7 +6,7 @@ from langchain_core.output_parsers import StrOutputParser
 def run_langchain_shopping_query(category: str, item: str) -> str:
     # 1. OpenAI model wrap kiya LangChain ke sath
     llm = ChatOpenAI(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         temperature=0.7,
         api_key=os.environ.get("OPENAI_API_KEY")
     )

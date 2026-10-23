@@ -15,7 +15,7 @@ def get_llm_response_with_cache(message: str, system_prompt: str) -> str:
 
     try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": message},
@@ -24,9 +24,9 @@ def get_llm_response_with_cache(message: str, system_prompt: str) -> str:
         )
         answer = response.choices[0].message.content.strip()
         set_cached_ai_response(message, answer, expire_seconds=3600, system_prompt=system_prompt)
-        log_ai_execution("gpt-3.5-turbo", len(message), time.perf_counter() - start)
+        log_ai_execution("gpt-4o-mini", len(message), time.perf_counter() - start)
         return answer
     except Exception as e:
         print(f"LLM API Error: {e}")
-        log_ai_execution("gpt-3.5-turbo-error", len(message), time.perf_counter() - start)
+        log_ai_execution("gpt-4o-mini-error", len(message), time.perf_counter() - start)
         return "I am currently experiencing high traffic. How else can I help you with your order?"

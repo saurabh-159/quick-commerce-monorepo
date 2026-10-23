@@ -8,11 +8,11 @@ class OpenAIClient:
 
     def generate(self, prompt: str, system_prompt: str = "You are a helpful assistant.") -> str:
         """
-        Sirf OpenAI (gpt-3.5-turbo) ko call karne ka clean method.
+        Sirf OpenAI (gpt-4o-mini) ko call karne ka clean method.
         """
         try:
             response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt}

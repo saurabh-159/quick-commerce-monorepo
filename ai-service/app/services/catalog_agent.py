@@ -178,7 +178,7 @@ def run_catalog_assistant(
                 }
 
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=messages,
             tools=CATALOG_TOOLS,
             tool_choice=tool_choice,
