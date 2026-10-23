@@ -145,13 +145,17 @@ CATALOG_TOOLS_SCHEMA = [
         "type": "function",
         "function": {
             "name": "get_category_details",
-            "description": "Jab user kisi category ya section ke baare me puche (e.g. 'medical category', 'pet waali do', 'snacks dikhao', 'doodh category').",
+            "description": "Jab user kisi category ke baare me puche ya us category ke items/products maange (e.g. 'fruits kaun kaun se hai', 'pet category', 'medical category do', 'snacks dikhao', 'doodh category').",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "category_slug": {
                         "type": "string",
                         "description": "Exact category slug: 'dairy-bread-eggs', 'fresh-vegetables-fruits', 'snacks-munchies', 'cold-drinks-juices', 'pharmacy-doctor-care', 'pet-animal-care', 'personal-care-hygiene', 'cleaning-household', ya 'all' agar saari dekhni ho.",
+                    },
+                    "fetch_products": {
+                        "type": "boolean",
+                        "description": "Set TRUE agar user category ke andar ke products/items dekhna chahta hai (e.g. 'fruits kaun se hai', 'snacks dikhao', 'medicines kya hai'). Agar user sirf category ka overview maange toh False.",
                     },
                     "target_store": {
                         "type": "string",
@@ -190,7 +194,7 @@ Aap Quick Commerce AI Assistant hain. User ke raw sawal aur local bhasha ko sama
 
 HUMARE CATALOG ME YAHI 8 CATEGORIES AVAILABLE HAIN:
 1. 'dairy-bread-eggs': Milk, Doodh, Curd, Butter, Eggs, Paneer, Bread
-2. 'fresh-vegetables-fruits': Sabzi, Tamatar, Aloo, Pyaz, Kela, Seb, Fruits
+2. 'fresh-vegetables-fruits': Sabzi, Fruits, Tamatar, Aloo, Pyaz, Kela, Seb
 3. 'snacks-munchies': Chips, Kurkure, Bhujia, Chocolate, Popcorn
 4. 'cold-drinks-juices': Coke, Juices, Mineral Water, Energy drink
 5. 'pharmacy-doctor-care': Medical, Medicine, Dawa, Dettol, Crocin/Paracetamol, Volini, Bandage
@@ -199,9 +203,11 @@ HUMARE CATALOG ME YAHI 8 CATEGORIES AVAILABLE HAIN:
 8. 'cleaning-household': Dishwash, Surf, Detergent, Lizol, Air freshener
 
 RULES:
-- Agar user 'medical' ya 'dawa' kahe -> 'get_category_details(category_slug="pharmacy-doctor-care")' call karein.
-- Agar user 'pet' maange -> 'get_category_details(category_slug="pet-animal-care")' call karein.
-- Agar user kisi specific store ka naam le (jaise 'janakpuri') -> 'get_specific_store_info(store_name="janakpuri")' call karein.
+- Jab user kisi category ke items/products maange (e.g. 'fruits kaun se hai', 'fruits btao kaun kaun se hai', 'snacks dikhao', 'medical ki dawayi dikhao') -> Call 'get_category_details(category_slug="...", fetch_products=True)'.
+- Jab user sirf category overview maange (e.g. 'store ki categories dikhao') -> Call 'get_category_details(category_slug="all", fetch_products=False)'.
+- Agar user 'medical' ya 'dawa' kahe -> category_slug="pharmacy-doctor-care".
+- Agar user 'pet' maange -> category_slug="pet-animal-care".
+- Agar user kisi specific store ka naam le (jaise 'janakpuri') -> Call 'get_specific_store_info(store_name="janakpuri")'.
 - OUT-OF-SCOPE ITEMS: Agar user aisi cheez maange jo hum deliver nahi karte (jaise Footwear/Chappal/Jute, Clothing/Kapde, Electronics/Phones, Alcohol) -> KOI TOOL CALL MAT KAREIN. Seedha polite Hindi-English me mana karein ki hum abhi Grocery, Pharmacy aur Daily Essentials deliver karte hain.
 - CASUAL CHAT: Agar user 'hi', 'kaise ho' kahe -> No tool call, friendly greeting dein aur puchein kya order karna hai.
 """
@@ -346,16 +352,19 @@ def tool_execution_node(state: AssistantState) -> Dict[str, Any]:
             )
         tool_result_data = {"matched_store": matched}
 
-    # Tool 4: Category Details (Fuzzy to exact slug)
+    # Tool 4: Category Details & Products
     elif func_name == "get_category_details":
         slug = args.get("category_slug")
+        fetch_prods = args.get("fetch_products", False)
         target_store_name = (args.get("target_store") or "").lower()
         store_to_use = primary_store
         if target_store_name and stores:
             store_to_use = next((s for s in stores if target_store_name in s.get("name", "").lower()), primary_store)
 
         store_id = str(store_to_use.get("store_id") or store_to_use.get("_id") or "") if store_to_use else ""
+        store_eta = store_to_use.get("eta_minutes", 15) if store_to_use else 15
         categories = []
+
         if store_id:
             try:
                 cat_raw = get_store_categories_sync(store_id)
@@ -365,32 +374,74 @@ def tool_execution_node(state: AssistantState) -> Dict[str, Any]:
                 categories = []
 
         # Exact slug filter
+        matched_cat = None
         if slug and slug != "all":
-            matched_cats = [c for c in categories if slug.lower() in (c.get("slug") or "").lower()]
-            if matched_cats:
-                categories = matched_cats
+            for c in categories:
+                if slug.lower() in (c.get("slug") or "").lower():
+                    matched_cat = c
+                    break
 
-        for cat in categories:
-            cid = str(cat.get("_id") or cat.get("category_id") or "")
-            name = cat.get("name", "Category")
-            c_slug = cat.get("slug") or name.lower().replace(" ", "-")
-            cards.append(
-                {
-                    "type": "category",
-                    "id": cid,
-                    "title": name,
-                    "subtitle": f"{cat.get('product_count', 0)} items",
-                    "href": f"/store/{store_id}/category/{c_slug}",
-                    "store_id": store_id,
-                    "image": category_card_image(cat),
-                }
-            )
-        tool_result_data = {
-            "store_name": store_to_use.get("name") if store_to_use else "Partner Store",
-            "categories": [c.get("name") for c in categories],
-        }
+        # A) User wants actual PRODUCTS inside category (e.g. "fruits kaun se hai")
+        if fetch_prods and matched_cat and store_id:
+            cat_id = str(matched_cat.get("_id") or matched_cat.get("category_id") or "")
+            prod_list = []
+            try:
+                prod_raw = get_category_products_sync(store_id=store_id, category=cat_id, limit=8)
+                prod_res = json.loads(prod_raw) if isinstance(prod_raw, str) else prod_raw
+                prod_list = prod_res.get("products") or []
+            except Exception:
+                prod_list = []
 
-    # Tool 5: Search Products
+            for p in prod_list:
+                pid = str(p.get("_id") or p.get("product_id") or "")
+                price = p.get("price") or p.get("price_rupees") or 0
+                cards.append(
+                    {
+                        "type": "product",
+                        "id": pid,
+                        "title": p.get("name", ""),
+                        "subtitle": f"Delivers in ~{store_eta} mins ({store_to_use.get('name', 'Store')})",
+                        "meta": f"₹{price}",
+                        "href": f"/store/{store_id}/product/{pid}",
+                        "store_id": store_id,
+                        "image": product_card_image(p),
+                    }
+                )
+
+            tool_result_data = {
+                "category_name": matched_cat.get("name"),
+                "store_name": store_to_use.get("name") if store_to_use else "Partner Store",
+                "products": [p.get("name") for p in prod_list],
+                "product_count": len(prod_list),
+            }
+
+        # B) User wants Category Card (e.g. "medical category do")
+        else:
+            cats_to_display = [matched_cat] if matched_cat else categories
+            for cat in cats_to_display:
+                if not cat:
+                    continue
+                cid = str(cat.get("_id") or cat.get("category_id") or "")
+                name = cat.get("name", "Category")
+                c_slug = cat.get("slug") or name.lower().replace(" ", "-")
+                cards.append(
+                    {
+                        "type": "category",
+                        "id": cid,
+                        "title": name,
+                        "subtitle": f"{cat.get('product_count', 0)} items",
+                        "href": f"/store/{store_id}/category/{c_slug}",
+                        "store_id": store_id,
+                        "image": category_card_image(cat),
+                    }
+                )
+
+            tool_result_data = {
+                "store_name": store_to_use.get("name") if store_to_use else "Partner Store",
+                "categories": [c.get("name") for c in cats_to_display if c],
+            }
+
+    # Tool 5: Search Products (by query)
     elif func_name == "search_catalog_products":
         prod_query = args.get("product_query") or ""
         target_store_name = (args.get("target_store") or "").lower()
@@ -445,6 +496,7 @@ def tool_execution_node(state: AssistantState) -> Dict[str, Any]:
             "query": prod_query,
             "store_name": source_store.get("name") if source_store else None,
             "found_count": len(found_prods),
+            "products": [p.get("name") for p in found_prods],
         }
 
     return {
@@ -463,11 +515,9 @@ def final_answer_node(state: AssistantState) -> Dict[str, Any]:
     tool_result = state.get("tool_result")
     query = state.get("query") or ""
 
-    # Agar koi tool call nahi hua (Out-of-scope item ya casual conversation)
     if not tool_calls:
         return {"answer": direct_ans}
 
-    # Jab tool se data successfully mil chuka hai
     system_prompt = f"""
     Aap Quick Commerce shopping sales assistant hain.
     Context:
@@ -475,9 +525,9 @@ def final_answer_node(state: AssistantState) -> Dict[str, Any]:
     - Tool Result Data: {json.dumps(tool_result, default=str)}
 
     Rules:
-    1. Agar category maangi thi: Clearly batayein ki store par yeh category available hai.
-    2. Agar store details puchi thi: Distance aur delivery time (ETA) highlight karein.
-    3. Agar product pucha tha aur mil gaya: Delivery time mention karein.
+    1. Agar Category ke Products aae hain: Saaf shabdon me bataiye ki store me ye items available hain (e.g. 'Hamare paas Apple, Banana available hain'). Broad category mat repeat karein.
+    2. Agar Category Card aae hain: Clearly batayein ki store par yeh category available hai.
+    3. Agar Store details puchi thi: Distance aur delivery time (ETA) highlight karein.
     4. Agar product 0 mila: Batayein ki yeh specific item out of stock hai, par humare paas baki fresh grocery aur essentials available hain.
     5. Answer concise (2 lines) aur warm Hinglish tone me dein. Aakhiri me agla shopping step puchein.
     """
