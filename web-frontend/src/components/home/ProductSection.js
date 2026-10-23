@@ -25,7 +25,7 @@ export default function ProductSection({ section, store, eyebrow = 'Handpicked',
         subtitle={section.subtitle}
         href={section.categorySlug ? `${categoryBase || '/'}?category=${section.categorySlug}` : ''}
       />
-      <div className={wide ? '' : `grid grid-cols-2 gap-4 md:gap-6 ${columnClass(products.length)}`}>
+      <div className={wide ? '' : `grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 ${columnClass(products.length)}`}>
         {products.map((product) => (
           <ProductCard
             key={product.id}
