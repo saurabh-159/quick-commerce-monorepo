@@ -124,7 +124,7 @@ CATALOG_TOOLS_SCHEMA = [
         "type": "function",
         "function": {
             "name": "list_all_nearby_stores",
-            "description": "Jab user aas-paas ke saare dark stores ki list dekhna chahta ho ('nearby stores', 'paas ke stores dikhao', 'kitni dukaane hain aas paas').",
+            "description": "DEFAULT store-list tool. Call immediately for: 'Stores near me?', 'store near me', 'nearby stores', 'paas ke stores', 'aas paas stores', 'kitni dukaane hain'. Do NOT ask clarifying questions — just call this tool.",
             "parameters": {"type": "object", "properties": {}},
         },
     },
@@ -272,10 +272,11 @@ RULE 5: NORMAL PRODUCT SEARCH & TYPOS
   * 'tamatar pyaz', 'aloo', 'kela' -> search_catalog_products(product_query="tomato potato onion banana")[cite: 2]
   * Agar user bole 'Paschim vihar se cold drink' -> search_catalog_products(product_query="cold drink", target_store="paschim vihar")[cite: 2]
 
-RULE 6: PURE STORE LOCATION / DISTANCE QUERIES
-- 'mera sabse paas wala store kaun sa hai' / 'nearest store' -> get_nearest_store_only().
-- 'aas paas ke saare stores dikhao' / 'nearby stores list' -> list_all_nearby_stores().
-- Sirf store ke baare me puchna (bina category/product ke), e.g. 'janakpuri store ke baare mein batao', 'saket store kitna dur hai'[cite: 2] -> get_specific_store_info(store_name="janakpuri")[cite: 2].
+RULE 6: PURE STORE LOCATION / DISTANCE QUERIES (NO CLARIFYING QUESTIONS)
+- DEFAULT: Agar user 'Stores near me?', 'store near me', 'nearby stores', 'paas ke stores', 'aas paas stores', 'meri location ke paas stores' bole -> TURANT call karein list_all_nearby_stores(). Clarifying question MAT poochho.
+- SIRF jab user clearly 'sabse paas / nearest / closest ek store' bole -> get_nearest_store_only().
+- Specific area/store naam (bina category/product ke), e.g. 'janakpuri store', 'saket store kitna dur hai' -> get_specific_store_info(store_name="...").
+- IMPORTANT: Store location queries pe text reply mat do — pehle tool call karo.
 
 RULE 7: STORE POLICY & DELIVERY FAQS (check_store_policy)
 - Agar user puche 'Delivery kitne der me hogi' -> check_store_policy(policy_type="delivery_time").
