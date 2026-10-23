@@ -1,4 +1,5 @@
 import json
+import logging
 import math
 import os
 from typing import Any, Dict, List, Optional, TypedDict
@@ -20,6 +21,9 @@ from app.services.embedding_service import (
 )
 
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+# Chat Completions + tools: gpt-4o-mini (gpt-3.5-turbo ab OpenAI pe 404 deta hai)
+ASSISTANT_MODEL = os.environ.get("ASSISTANT_MODEL", "gpt-4o-mini")
 
 # ----------------------------------------------------
 # Fallback Card Images
@@ -304,7 +308,7 @@ def agent_decision_node(state: AssistantState) -> Dict[str, Any]:
 
     try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model=ASSISTANT_MODEL,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": raw_query},
@@ -312,7 +316,7 @@ def agent_decision_node(state: AssistantState) -> Dict[str, Any]:
             tools=CATALOG_TOOLS_SCHEMA,
             tool_choice="auto",
             temperature=0.1,
-            timeout=8.0,
+            timeout=15.0,
         )
         choice = response.choices[0].message
         tool_calls = []
@@ -327,6 +331,7 @@ def agent_decision_node(state: AssistantState) -> Dict[str, Any]:
 
         direct_answer = choice.content or ""
     except Exception:
+        logging.exception("assistant model call failed model=%s", ASSISTANT_MODEL)
         tool_calls = []
         direct_answer = "Main aapki shopping me help karne ke liye yahan hoon! Aapko Grocery, Snacks, ya Pharmacy me se kya chahiye?"
 
@@ -667,13 +672,14 @@ def final_answer_node(state: AssistantState) -> Dict[str, Any]:
 
     try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model=ASSISTANT_MODEL,
             messages=[{"role": "system", "content": system_prompt}],
             temperature=0.4,
-            timeout=8.0,
+            timeout=15.0,
         )
         answer = (response.choices[0].message.content or "").strip()
     except Exception:
+        logging.exception("assistant final answer failed model=%s", ASSISTANT_MODEL)
         answer = "Aapke liye ye options available hain! Kya aap inme se kuch order karna chahenge?"
 
     return {"answer": answer}
