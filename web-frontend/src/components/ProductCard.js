@@ -31,6 +31,7 @@ export default function ProductCard({ product, storeId, storeName, layout = 'car
             qty: 1
           })
         });
+        window.dispatchEvent(new Event('qc-cart'));
       }
       setAdded(true);
       setTimeout(() => setAdded(false), 1200);

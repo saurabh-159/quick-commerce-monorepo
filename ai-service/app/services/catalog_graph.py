@@ -52,6 +52,76 @@ def product_card_image(product: Dict[str, Any]) -> str:
     return _first_image(product.get("image"), product.get("images")) or DEFAULT_PRODUCT_ART
 
 
+def _product_price_paise(product: Dict[str, Any], store_id: str = "") -> int:
+    for key in ("sellingPricePaise", "price_paise", "pricePaise"):
+        if product.get(key) is not None:
+            try:
+                return int(product.get(key))
+            except (TypeError, ValueError):
+                pass
+    price = product.get("price") or product.get("price_rupees")
+    if price is not None:
+        try:
+            return int(round(float(price) * 100))
+        except (TypeError, ValueError):
+            pass
+    if store_id:
+        try:
+            from bson import ObjectId
+
+            inv = sync_db.inventories.find_one(
+                {"store": ObjectId(store_id), "product": ObjectId(str(product.get("_id") or product.get("product_id") or ""))}
+            )
+            if inv and inv.get("sellingPricePaise") is not None:
+                return int(inv["sellingPricePaise"])
+        except Exception:
+            pass
+    return 0
+
+
+def _product_stock(product: Dict[str, Any], store_id: str = "") -> int:
+    if product.get("stock") is not None:
+        try:
+            return int(product.get("stock"))
+        except (TypeError, ValueError):
+            pass
+    if store_id:
+        try:
+            from bson import ObjectId
+
+            inv = sync_db.inventories.find_one(
+                {"store": ObjectId(store_id), "product": ObjectId(str(product.get("_id") or product.get("product_id") or ""))}
+            )
+            if inv and inv.get("stock") is not None:
+                return int(inv["stock"])
+        except Exception:
+            pass
+    return 99
+
+
+def build_product_card(product: Dict[str, Any], store_id: str, store_name: str = "", store_eta: int = 15) -> Dict[str, Any]:
+    pid = str(product.get("_id") or product.get("product_id") or "")
+    price_paise = _product_price_paise(product, store_id)
+    stock = _product_stock(product, store_id)
+    unit = product.get("unit") or ""
+    name = product.get("name") or "Product"
+    price_label = f"₹{price_paise / 100:.0f}" if price_paise else None
+    return {
+        "type": "product",
+        "id": pid,
+        "title": name,
+        "subtitle": f"Delivers in ~{store_eta} mins ({store_name or 'Store'})",
+        "meta": price_label,
+        "href": f"/store/{store_id}/product/{pid}",
+        "store_id": store_id,
+        "store_name": store_name or "",
+        "image": product_card_image(product),
+        "price_paise": price_paise,
+        "unit": unit,
+        "stock": stock,
+    }
+
+
 # ----------------------------------------------------
 # Distance & Similarity Math
 # ----------------------------------------------------
@@ -392,21 +462,9 @@ def tool_execution_node(state: AssistantState) -> Dict[str, Any]:
             except Exception:
                 prod_list = []
 
+            store_name = store_to_use.get("name", "Store") if store_to_use else "Store"
             for p in prod_list:
-                pid = str(p.get("_id") or p.get("product_id") or "")
-                price = p.get("price") or p.get("price_rupees") or 0
-                cards.append(
-                    {
-                        "type": "product",
-                        "id": pid,
-                        "title": p.get("name", ""),
-                        "subtitle": f"Delivers in ~{store_eta} mins ({store_to_use.get('name', 'Store')})",
-                        "meta": f"₹{price}",
-                        "href": f"/store/{store_id}/product/{pid}",
-                        "store_id": store_id,
-                        "image": product_card_image(p),
-                    }
-                )
+                cards.append(build_product_card(p, store_id, store_name=store_name, store_eta=store_eta))
 
             tool_result_data = {
                 "category_name": matched_cat.get("name"),
@@ -477,21 +535,9 @@ def tool_execution_node(state: AssistantState) -> Dict[str, Any]:
 
         store_id = str(source_store.get("store_id") or source_store.get("_id") or "") if source_store else ""
         store_eta = source_store.get("eta_minutes", 15) if source_store else 15
+        store_name = source_store.get("name") if source_store else "Store"
         for p in found_prods:
-            pid = str(p.get("_id") or p.get("product_id") or "")
-            price = p.get("price") or p.get("price_rupees") or 0
-            cards.append(
-                {
-                    "type": "product",
-                    "id": pid,
-                    "title": p.get("name", ""),
-                    "subtitle": f"Delivers in ~{store_eta} mins ({source_store.get('name') if source_store else 'Store'})",
-                    "meta": f"₹{price}",
-                    "href": f"/store/{store_id}/product/{pid}",
-                    "store_id": store_id,
-                    "image": product_card_image(p),
-                }
-            )
+            cards.append(build_product_card(p, store_id, store_name=store_name or "Store", store_eta=store_eta))
         tool_result_data = {
             "query": prod_query,
             "store_name": source_store.get("name") if source_store else None,

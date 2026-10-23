@@ -98,12 +98,14 @@ def cards_from_tool(tool_name: str, result_json: str) -> list:
 
     if tool_name == "get_category_products":
         store_id = data.get("store_id")
+        store_name = data.get("store_name") or ""
         for p in (data.get("products") or [])[:8]:
             pid = p.get("product_id")
             if not pid or not store_id:
                 continue
             price = p.get("price_rupees")
             stock = p.get("stock")
+            price_paise = int(round(float(price) * 100)) if price is not None else 0
             meta_parts = []
             if price is not None:
                 meta_parts.append(f"₹{price}")
@@ -117,7 +119,11 @@ def cards_from_tool(tool_name: str, result_json: str) -> list:
                 "meta": " · ".join(meta_parts) if meta_parts else None,
                 "href": f"/store/{store_id}/product/{pid}",
                 "store_id": store_id,
+                "store_name": store_name,
                 "image": p.get("image") or "",
+                "price_paise": price_paise,
+                "unit": p.get("unit") or "",
+                "stock": stock if stock is not None else 99,
             })
 
     return cards

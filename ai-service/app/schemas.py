@@ -67,7 +67,12 @@ class AssistantCard(BaseModel):
     meta: Optional[str] = None
     href: str
     store_id: Optional[str] = None
+    store_name: Optional[str] = None
     image: Optional[str] = None
+    # Cart helpers for product cards
+    price_paise: Optional[int] = None
+    unit: Optional[str] = None
+    stock: Optional[int] = None
 
 class AssistantResponse(BaseModel):
     query: str

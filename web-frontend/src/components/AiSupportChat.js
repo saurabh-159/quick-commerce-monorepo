@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { getToken, getRole } from '@/utils/auth';
+import { addGuestItem } from '@/utils/guestCart';
+import { api } from '@/utils/api';
 import { aiAssistant, aiOrderSupport } from '@/utils/ai';
 
 const CATEGORY_ART = {
@@ -81,7 +83,121 @@ function requestUserLocation() {
   });
 }
 
+function pricePaiseFromCard(card) {
+  if (card?.price_paise != null) return Number(card.price_paise) || 0;
+  if (card?.sellingPricePaise != null) return Number(card.sellingPricePaise) || 0;
+  const match = String(card?.meta || '').match(/₹\s*([\d.]+)/);
+  if (match) return Math.round(parseFloat(match[1]) * 100);
+  return 0;
+}
+
+function ProductAssistantCard({ card, index }) {
+  const [loading, setLoading] = useState(false);
+  const [added, setAdded] = useState(false);
+  const image = resolveCardImage(card);
+  const storeId = card.store_id || card.storeId || '';
+  const outOfStock = card.stock != null && Number(card.stock) <= 0;
+  const priceLabel =
+    card.meta?.includes('₹')
+      ? card.meta.split('·')[0].trim()
+      : pricePaiseFromCard(card)
+        ? `₹${Math.round(pricePaiseFromCard(card) / 100)}`
+        : null;
+
+  const handleAdd = async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!storeId || !card.id || loading || outOfStock) return;
+
+    setLoading(true);
+    try {
+      const token = getToken();
+      const role = getRole();
+      const product = {
+        id: card.id,
+        name: card.title,
+        unit: card.unit || '',
+        sellingPricePaise: pricePaiseFromCard(card),
+        stock: card.stock != null ? Number(card.stock) : 99,
+        image: card.image,
+      };
+
+      if (!token || role !== 'customer') {
+        addGuestItem({
+          storeId,
+          storeName: card.store_name || card.storeName || '',
+          product,
+        });
+      } else {
+        await api('/cart/items', {
+          method: 'POST',
+          body: JSON.stringify({ productId: card.id, storeId, qty: 1 }),
+        });
+        window.dispatchEvent(new Event('qc-cart'));
+      }
+
+      setAdded(true);
+      setTimeout(() => setAdded(false), 1200);
+    } catch (err) {
+      alert(err.message || 'Failed to add item');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <article
+      className="help-card group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_8px_24px_rgba(26,20,51,0.06)] ring-1 ring-brand-border transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(83,50,201,0.14)] hover:ring-brand/40 md:flex-row"
+      style={{ animationDelay: `${index * 70}ms` }}
+    >
+      <Link
+        href={card.href || '#'}
+        className="relative aspect-square w-full shrink-0 overflow-hidden bg-brand-soft md:aspect-auto md:h-[112px] md:w-[112px]"
+      >
+        <img
+          src={image}
+          alt=""
+          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+        />
+      </Link>
+      <div className="flex min-w-0 flex-1 flex-col px-2.5 pb-2.5 pt-2 md:justify-center md:px-4 md:py-3">
+        <Link href={card.href || '#'} className="min-w-0">
+          <p className="hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-brand md:block">
+            Product
+          </p>
+          <p className="line-clamp-2 font-sans text-[13px] leading-snug text-brand-text md:mt-1 md:line-clamp-1 md:text-lg md:leading-tight">
+            {card.title}
+          </p>
+          {card.subtitle ? (
+            <p className="mt-0.5 hidden truncate text-xs text-brand-muted md:block">{card.subtitle}</p>
+          ) : null}
+        </Link>
+        <div className="mt-2 flex items-center justify-between gap-2 md:mt-3">
+          {priceLabel ? (
+            <p className="truncate text-sm font-semibold text-brand-text">{priceLabel}</p>
+          ) : (
+            <span />
+          )}
+          <button
+            type="button"
+            onClick={handleAdd}
+            disabled={loading || outOfStock || !storeId}
+            className="shrink-0 rounded-full bg-brand px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-brand-dark disabled:opacity-40 md:px-4 md:py-2 md:text-xs"
+          >
+            {outOfStock ? 'Out' : loading ? '…' : added ? 'Added' : 'Add'}
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function AssistantCard({ card, index }) {
+  const type = (card.type || '').toLowerCase();
+  if (type === 'product') {
+    return <ProductAssistantCard card={card} index={index} />;
+  }
+
   const image = resolveCardImage(card);
   const typeLabel = (card.type || 'item').replace(/_/g, ' ');
 

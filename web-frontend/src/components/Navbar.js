@@ -4,6 +4,23 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getToken, getRole, logout } from '@/utils/auth';
 import { guestItemCount } from '@/utils/guestCart';
+import { api } from '@/utils/api';
+
+function CartIcon({ className = 'h-5 w-5' }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" aria-hidden>
+      <path
+        d="M7 7h13l-1.4 8.2a2 2 0 0 1-2 1.8H9.2a2 2 0 0 1-2-1.6L5.2 4H3"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="9.5" cy="19.5" r="1.2" fill="currentColor" />
+      <circle cx="17" cy="19.5" r="1.2" fill="currentColor" />
+    </svg>
+  );
+}
 
 export default function Navbar() {
   const [token, setToken] = useState(null);
@@ -11,18 +28,40 @@ export default function Navbar() {
   const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
-    const sync = () => {
-      setToken(getToken());
-      setRole(getRole());
-      setCartCount(guestItemCount());
+    let ignore = false;
+
+    const sync = async () => {
+      const nextToken = getToken();
+      const nextRole = getRole();
+      setToken(nextToken);
+      setRole(nextRole);
+
+      if (nextToken && nextRole === 'customer') {
+        try {
+          const cart = await api('/cart');
+          if (ignore) return;
+          const count = (cart?.items || []).reduce((sum, item) => sum + (item.qty || 0), 0);
+          setCartCount(count);
+          return;
+        } catch {
+          if (ignore) return;
+          setCartCount(guestItemCount());
+          return;
+        }
+      }
+
+      if (!ignore) setCartCount(guestItemCount());
     };
 
     sync();
     window.addEventListener('qc-auth', sync);
     window.addEventListener('qc-guest-cart', sync);
+    window.addEventListener('qc-cart', sync);
     return () => {
+      ignore = true;
       window.removeEventListener('qc-auth', sync);
       window.removeEventListener('qc-guest-cart', sync);
+      window.removeEventListener('qc-cart', sync);
     };
   }, []);
 
@@ -58,11 +97,14 @@ export default function Navbar() {
           )}
           <Link
             href="/cart"
-            className="relative whitespace-nowrap rounded-xl border border-brand-border px-2.5 py-2 text-sm font-bold text-brand-text sm:px-3"
+            aria-label={cartCount > 0 ? `Cart, ${cartCount} items` : 'Cart'}
+            className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-brand-border text-brand-text transition hover:bg-brand-soft"
           >
-            Cart
+            <CartIcon />
             {cartCount > 0 && (
-              <span className="ml-2 rounded-full bg-brand px-1.5 text-xs text-white">{cartCount}</span>
+              <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-brand px-1 text-[10px] font-bold leading-none text-white">
+                {cartCount > 99 ? '99+' : cartCount}
+              </span>
             )}
           </Link>
           {token ? (

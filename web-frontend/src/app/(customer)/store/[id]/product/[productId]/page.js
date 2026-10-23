@@ -107,6 +107,7 @@ export default function ProductDetail() {
           method: 'POST',
           body: JSON.stringify({ productId: data.product.id, storeId: data.store.id, qty: 1 })
         });
+        window.dispatchEvent(new Event('qc-cart'));
       }
       setAdded(true);
     } catch (err) {
