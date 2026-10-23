@@ -1,7 +1,9 @@
+import { Suspense } from 'react';
 import './globals.css';
 import { Poppins } from 'next/font/google';
 import { SocketProvider } from '@/context/SocketContext';
 import OrderAlerts from '@/components/OrderAlerts';
+import NavigationProgress from '@/components/NavigationProgress';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -20,6 +22,9 @@ export default function RootLayout({ children }) {
     <html lang="en" className={poppins.variable}>
       <body className="font-sans antialiased">
         <SocketProvider>
+          <Suspense fallback={null}>
+            <NavigationProgress />
+          </Suspense>
           <OrderAlerts />
           {children}
         </SocketProvider>
