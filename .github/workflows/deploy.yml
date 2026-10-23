@@ -20,13 +20,21 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            echo "========== [1/4] Navigating to Project =========="
             cd ~/quick-commerce-monorepo
-            echo "Pulling latest code from GitHub..."
-            git pull origin main
-            
-            echo "Rebuilding and restarting Docker containers..."
-            docker compose down
+
+            echo "========== [2/4] Pulling Fresh Code from GitHub =========="
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "========== [3/4] Rebuilding Docker Containers =========="
+            # Force recreate aur build bina purane cache ke
+            docker compose down --remove-orphans
             docker compose build --no-cache
             docker compose up -d
-            
+
+            echo "========== [4/4] Verifying Containers Status =========="
+            sleep 5
+            docker compose ps
+
             echo "Deployment Completed Successfully!"
