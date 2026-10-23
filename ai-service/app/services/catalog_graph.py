@@ -22,8 +22,8 @@ from app.services.embedding_service import (
 
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-# Chat Completions + tools: gpt-4o-mini (gpt-3.5-turbo ab OpenAI pe 404 deta hai)
-ASSISTANT_MODEL = os.environ.get("ASSISTANT_MODEL", "gpt-4o-mini")
+# Production default: gpt-4o (tool calling + Hinglish routing). Override via ASSISTANT_MODEL.
+ASSISTANT_MODEL = os.environ.get("ASSISTANT_MODEL", "gpt-4o")
 
 # ----------------------------------------------------
 # Fallback Card Images
