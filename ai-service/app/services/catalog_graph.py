@@ -287,7 +287,7 @@ def catalog_tool_node(state: AssistantState) -> Dict[str, Any]:
         }
 
     # ----------------------------------------------------
-    # Case 3: Store Categories
+    # Case 3: Store Categories (Filtered)
     # ----------------------------------------------------
     if intent == "store_categories":
         categories = []
@@ -298,6 +298,20 @@ def catalog_tool_node(state: AssistantState) -> Dict[str, Any]:
                 categories = cat_res.get("categories") or []
             except Exception:
                 categories = []
+
+        # Agar user ne specific category/word manga hai (jaise "pet")
+        filter_word = (target_category or cleaned_query or "").lower().strip()
+
+        # Generic words skip; specific words (pet, doodh, snacks) se filter
+        if filter_word and filter_word not in ["category", "categories", "all", "sab", "dukaan"]:
+            matching_cats = [
+                c
+                for c in categories
+                if filter_word in c.get("name", "").lower()
+                or filter_word in c.get("slug", "").lower()
+            ]
+            if matching_cats:
+                categories = matching_cats
 
         cards = []
         for cat in categories:

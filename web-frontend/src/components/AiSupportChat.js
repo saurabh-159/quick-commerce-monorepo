@@ -88,34 +88,36 @@ function AssistantCard({ card, index }) {
   return (
     <Link
       href={card.href}
-      className="help-card group relative flex overflow-hidden rounded-2xl bg-white shadow-[0_8px_24px_rgba(26,20,51,0.06)] ring-1 ring-brand-border transition duration-300 hover:-translate-y-1 hover:shadow-[0_16px_36px_rgba(83,50,201,0.16)] hover:ring-brand/40"
+      className="help-card group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_8px_24px_rgba(26,20,51,0.06)] ring-1 ring-brand-border transition duration-300 hover:-translate-y-1 hover:shadow-[0_16px_36px_rgba(83,50,201,0.16)] hover:ring-brand/40 md:flex-row"
       style={{ animationDelay: `${index * 70}ms` }}
     >
-      <div className="relative h-[92px] w-[92px] shrink-0 overflow-hidden bg-brand-soft sm:h-[104px] sm:w-[104px]">
+      <div className="relative aspect-[5/4] w-full shrink-0 overflow-hidden bg-brand-soft md:aspect-auto md:h-[104px] md:w-[104px]">
         <img
           src={image}
           alt=""
           className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent md:bg-gradient-to-r md:from-transparent md:to-white/10" />
       </div>
-      <div className="flex min-w-0 flex-1 flex-col justify-center px-3.5 py-3 sm:px-4">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand">
+      <div className="flex min-w-0 flex-1 flex-col justify-center px-2.5 py-2.5 md:px-4 md:py-3">
+        <p className="hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-brand md:block">
           {typeLabel}
         </p>
-        <p className="mt-1 truncate font-sans text-lg leading-tight text-brand-text sm:text-xl">
+        <p className="line-clamp-2 font-sans text-[13px] leading-snug text-brand-text md:mt-1 md:truncate md:text-xl md:leading-tight">
           {card.title}
         </p>
         {card.subtitle ? (
-          <p className="mt-1 truncate text-xs text-brand-muted">{card.subtitle}</p>
+          <p className="mt-1 hidden truncate text-xs text-brand-muted md:block">{card.subtitle}</p>
         ) : null}
-        <div className="mt-2 flex items-center justify-between gap-2">
+        <div className="mt-1.5 flex items-center justify-between gap-1 md:mt-2 md:gap-2">
           {card.meta ? (
-            <p className="truncate text-xs font-semibold text-brand">{card.meta}</p>
+            <p className="truncate text-[11px] font-semibold text-brand md:text-xs">{card.meta}</p>
+          ) : card.subtitle ? (
+            <p className="truncate text-[11px] text-brand-muted md:hidden">{card.subtitle}</p>
           ) : (
             <span />
           )}
-          <span className="shrink-0 text-xs font-medium text-brand-text transition group-hover:translate-x-0.5">
+          <span className="hidden shrink-0 text-xs font-medium text-brand-text transition group-hover:translate-x-0.5 md:inline">
             Open →
           </span>
         </div>
@@ -306,7 +308,7 @@ export default function AiSupportChat({ title = 'Ask for help', mode = 'auto' })
             </div>
 
             {msg.role === 'assistant' && msg.cards?.length > 0 && (
-              <div className="mr-auto grid max-w-[92%] gap-2.5 sm:max-w-[88%]">
+              <div className="mr-auto grid w-full grid-cols-2 gap-2.5 md:max-w-[92%] md:grid-cols-1">
                 {msg.cards.map((card, cardIndex) => (
                   <AssistantCard
                     key={`${card.type}-${card.id}-${card.href}-${cardIndex}`}
