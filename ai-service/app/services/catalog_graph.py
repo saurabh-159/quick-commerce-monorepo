@@ -1,5 +1,4 @@
 import json
-import logging
 import math
 import os
 from typing import Any, Dict, List, Optional, TypedDict
@@ -51,76 +50,6 @@ def store_card_image(store: Dict[str, Any]) -> str:
 
 def product_card_image(product: Dict[str, Any]) -> str:
     return _first_image(product.get("image"), product.get("images")) or DEFAULT_PRODUCT_ART
-
-
-def _product_price_paise(product: Dict[str, Any], store_id: str = "") -> int:
-    for key in ("sellingPricePaise", "price_paise", "pricePaise"):
-        if product.get(key) is not None:
-            try:
-                return int(product.get(key))
-            except (TypeError, ValueError):
-                pass
-    price = product.get("price") or product.get("price_rupees")
-    if price is not None:
-        try:
-            return int(round(float(price) * 100))
-        except (TypeError, ValueError):
-            pass
-    if store_id:
-        try:
-            from bson import ObjectId
-
-            inv = sync_db.inventories.find_one(
-                {"store": ObjectId(store_id), "product": ObjectId(str(product.get("_id") or product.get("product_id") or ""))}
-            )
-            if inv and inv.get("sellingPricePaise") is not None:
-                return int(inv["sellingPricePaise"])
-        except Exception:
-            pass
-    return 0
-
-
-def _product_stock(product: Dict[str, Any], store_id: str = "") -> int:
-    if product.get("stock") is not None:
-        try:
-            return int(product.get("stock"))
-        except (TypeError, ValueError):
-            pass
-    if store_id:
-        try:
-            from bson import ObjectId
-
-            inv = sync_db.inventories.find_one(
-                {"store": ObjectId(store_id), "product": ObjectId(str(product.get("_id") or product.get("product_id") or ""))}
-            )
-            if inv and inv.get("stock") is not None:
-                return int(inv["stock"])
-        except Exception:
-            pass
-    return 99
-
-
-def build_product_card(product: Dict[str, Any], store_id: str, store_name: str = "", store_eta: int = 15) -> Dict[str, Any]:
-    pid = str(product.get("_id") or product.get("product_id") or "")
-    price_paise = _product_price_paise(product, store_id)
-    stock = _product_stock(product, store_id)
-    unit = product.get("unit") or ""
-    name = product.get("name") or "Product"
-    price_label = f"₹{price_paise / 100:.0f}" if price_paise else None
-    return {
-        "type": "product",
-        "id": pid,
-        "title": name,
-        "subtitle": f"Delivers in ~{store_eta} mins ({store_name or 'Store'})",
-        "meta": price_label,
-        "href": f"/store/{store_id}/product/{pid}",
-        "store_id": store_id,
-        "store_name": store_name or "",
-        "image": product_card_image(product),
-        "price_paise": price_paise,
-        "unit": unit,
-        "stock": stock,
-    }
 
 
 # ----------------------------------------------------
@@ -176,14 +105,14 @@ class AssistantState(TypedDict):
 
 
 # ----------------------------------------------------
-# Phase 1: Autonomous Tools Definition
+# Autonomous Tools Definition (OpenAI Function Schemas)
 # ----------------------------------------------------
 CATALOG_TOOLS_SCHEMA = [
     {
         "type": "function",
         "function": {
             "name": "get_nearest_store_only",
-            "description": "Jab user specifically puche 'sabse paas wali dukaan', 'nearest store' ya 'closest dark store'.",
+            "description": "SIRF tab chalayein jab user specifically puche 'sabse paas wali dukaan', 'nearest store' ya 'closest dark store' bina kisi category ya product ke.",
             "parameters": {"type": "object", "properties": {}},
         },
     },
@@ -191,7 +120,7 @@ CATALOG_TOOLS_SCHEMA = [
         "type": "function",
         "function": {
             "name": "list_all_nearby_stores",
-            "description": "Jab user aas-paas ke saare stores dekhna chahta ho ('nearby stores', 'paas ke stores dikhao').",
+            "description": "Jab user aas-paas ke saare dark stores ki list dekhna chahta ho ('nearby stores', 'paas ke stores dikhao', 'kitni dukaane hain aas paas').",
             "parameters": {"type": "object", "properties": {}},
         },
     },
@@ -199,13 +128,13 @@ CATALOG_TOOLS_SCHEMA = [
         "type": "function",
         "function": {
             "name": "get_specific_store_info",
-            "description": "Jab user kisi specific store/area ke baare me puche (e.g., 'janakpuri store ke baare mein batao', 'rajouri garden store').",
+            "description": "Jab user kisi specific store/area ke location, distance ya delivery time ke bare me puche (e.g., 'janakpuri store kitna dur hai', 'rajouri garden store kahan hai'). NOTE: Agar user us store ki CATEGORY ya PRODUCTS maange toh yeh tool KABHI call na karein.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "store_name": {
                         "type": "string",
-                        "description": "Store ya area ka naam (e.g. janakpuri, rajouri garden, saket).",
+                        "description": "Store area name (e.g. janakpuri, rohini, saket, rajouri garden).",
                     }
                 },
                 "required": ["store_name"],
@@ -216,21 +145,21 @@ CATALOG_TOOLS_SCHEMA = [
         "type": "function",
         "function": {
             "name": "get_category_details",
-            "description": "Jab user kisi category ke baare me puche ya us category ke items/products maange (e.g. 'fruits kaun kaun se hai', 'pet category', 'medical category do', 'snacks dikhao', 'doodh category').",
+            "description": "Jab user kisi category ke baare me puche, category ke items maange, YA KISI SPECIFIC STORE KI CATEGORIES maange (e.g. 'rohini store ki category do', 'fruits kaun kaun se hai', 'pet category dikhao', 'medical category').",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "category_slug": {
                         "type": "string",
-                        "description": "Exact category slug: 'dairy-bread-eggs', 'fresh-vegetables-fruits', 'snacks-munchies', 'cold-drinks-juices', 'pharmacy-doctor-care', 'pet-animal-care', 'personal-care-hygiene', 'cleaning-household', ya 'all' agar saari dekhni ho.",
+                        "description": "Exact category slug: 'dairy-bread-eggs', 'fresh-vegetables-fruits', 'snacks-munchies', 'cold-drinks-juices', 'pharmacy-doctor-care', 'pet-animal-care', 'personal-care-hygiene', 'cleaning-household', ya 'all' agar store ki saari categories maangi hon.",
                     },
                     "fetch_products": {
                         "type": "boolean",
-                        "description": "Set TRUE agar user category ke andar ke products/items dekhna chahta hai (e.g. 'fruits kaun se hai', 'snacks dikhao', 'medicines kya hai'). Agar user sirf category ka overview maange toh False.",
+                        "description": "Set TRUE jab user category ke andar ke items/products dekhna chahta hai (e.g. 'fruits kaun kaun se hai', 'snacks me kya hai', 'medicines dikhao'). Set FALSE agar user sirf category dekhna chahe (e.g. 'rohini store ki categories do', 'medical category dikhao').",
                     },
                     "target_store": {
                         "type": "string",
-                        "description": "Agar kisi specific store ka naam mention ho, warna null.",
+                        "description": "Agar user ne kisi specific store/area ka naam bola ho (e.g. 'rohini', 'janakpuri'), warna null.",
                     },
                 },
                 "required": ["category_slug"],
@@ -241,74 +170,115 @@ CATALOG_TOOLS_SCHEMA = [
         "type": "function",
         "function": {
             "name": "search_catalog_products",
-            "description": "Jab user specific product, food item, problem-based item maange (e.g., 'crocin', 'doodh', 'chips', 'dog food', 'sar dard ki dawa').",
+            "description": "Jab user direct kisi specific product, brand, problem-based item, budget filter ya price sort ke sath saman maange (e.g. 'doodh', 'chips', 'crocin', 'sar dard ki dawa', 'sabse sasta doodh', 'snacks under 50').",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "product_query": {
                         "type": "string",
-                        "description": "Search term cleaned (e.g. 'chips', 'milk', 'paracetamol', 'pet food').",
+                        "description": "Cleaned search term (e.g. 'milk', 'chips', 'paracetamol', 'dog food', 'curd').",
+                    },
+                    "sort_by": {
+                        "type": "string",
+                        "enum": ["price_low_to_high", "price_high_to_low"],
+                        "description": "Sirf tab pass karein jab user ne explicitly 'sasta' (price_low_to_high) ya 'expensive/premium' (price_high_to_low) manga ho. Normal search me null rakhein.",
+                    },
+                    "max_price": {
+                        "type": "number",
+                        "description": "Budget limit agar user ne manga ho (e.g. 'under 50' me 50, 'under 100' me 100). Warna null.",
                     },
                     "target_store": {
                         "type": "string",
-                        "description": "Agar specific store bola ho, warna null.",
+                        "description": "Agar user ne specific store bola ho (e.g. 'paschim vihar se cold drink'), warna null.",
                     },
                 },
                 "required": ["product_query"],
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "check_store_policy",
+            "description": "Jab user non-product policies puche jaise Delivery fee, Minimum order value, Delivery ETA time, Cash on Delivery (COD) ya return/cancellation policy.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "policy_type": {
+                        "type": "string",
+                        "enum": ["delivery_fee", "delivery_time", "payment_cod", "general_policy"],
+                        "description": "Type of policy requested.",
+                    }
+                },
+                "required": ["policy_type"],
+            },
+        },
+    },
 ]
 
+# ----------------------------------------------------
+# Ultra-Comprehensive System Prompt & Rules
+# ----------------------------------------------------
 SYSTEM_PROMPT = """
-Aap ek ultra-smart, polite aur proactive Quick Commerce Sales Assistant hain.
-User ki raw query, Hinglish bhasha, spelling mistakes (typos), aur ajeeb/confusing sawalon ko samajh kar sahi decision lijiye.
+Aap Quick Commerce platform ke AI Shopping Assistant hain.
+User ke conversational bhasha, Hinglish words, typos aur alag-alag shopping intents ko samajh kar 100% accurate tool call karein ya direct polite response dein.
 
 HUMARE CATALOG ME STRICTLY YAHI 8 CATEGORIES AVAILABLE HAIN:
-1. 'dairy-bread-eggs': Milk, Doodh, Curd, Dahi, Butter, Makhan, Eggs, Anda, Paneer, Brown Bread
-2. 'fresh-vegetables-fruits': Sabzi, Fruits, Fal, Tamatar, Tomato, Aloo, Potato, Pyaz, Onion, Kela, Banana, Seb, Apple, Dhaniya
-3. 'snacks-munchies': Chips, Lays, Kurkure, Bhujia, Sev, Chocolate, Dairy Milk Silk, Popcorn, Namkeen, Munchies
+1. 'dairy-bread-eggs': Milk, Doodh, Curd, Dahi, Butter, Makhan, Eggs, Anda, Paneer, Brown Bread[cite: 2]
+2. 'fresh-vegetables-fruits': Sabzi, Fruits, Fal, Tamatar, Tomato, Aloo, Potato, Pyaz, Onion, Kela, Banana, Seb, Apple, Dhaniya[cite: 2]
+3. 'snacks-munchies': Chips, Lays, Kurkure, Bhujia, Sev, Chocolate, Dairy Milk Silk, Popcorn, Namkeen, Munchies[cite: 2]
 4. 'cold-drinks-juices': Cold drink, Coke, Coca-Cola Zero, Real Fruit Juice, Bisleri Water, Paani, Red Bull[cite: 2]
 5. 'pharmacy-doctor-care': Medical, Medicine, Dawa, Dettol, Crocin, Paracetamol, Sar dard, Pain relief, Volini spray, Hansaplast bandage, Vicks, Chyawanprash, Thermometer[cite: 2]
 6. 'pet-animal-care': Pet, Kutta, Billi, Dog food, Cat food, Pedigree, Whiskas, Dog treats, Calcium bone, Cat litter, Pet shampoo[cite: 2]
 7. 'personal-care-hygiene': Toothpaste, Colgate, Soap, Sabun, Dove, Shampoo, Head & Shoulders, Sanitary pads, Whisper[cite: 2]
-8. 'cleaning-household': Bartan dhona, Vim gel, Surf Excel liquid, Detergent, Lizol, Floor cleaner, Odonil room/bathroom freshener[cite: 2]
+8. 'cleaning-household': Bartan dhona, Vim gel, Surf Excel liquid, Detergent, Lizol, Floor cleaner, Odonil freshener[cite: 2]
 
 ======================================================================
-STRICT DECISION RULES (PRIORITY ORDER)
+STRICT DECISION RULES (CONFUSION ROKNE KE LIYE PRIORITY ORDER)
 ======================================================================
 
 RULE 1: STORE + CATEGORY QUERY (HIGHEST PRIORITY)
-- Agar user kisi store ka naam aur category ek sath maange (e.g. 'rohini store ki category do', 'janakpuri dark store ki categories dikhao', 'saket store me kya categories hain')[cite: 2]:
-  -> HAMESHA call karein: get_category_details(category_slug="all", fetch_products=False, target_store="<store_name>")[cite: 2].
-  -> FORBIDDEN: Kabhi bhi 'get_specific_store_info' call MAT karein jab category puchi gayi ho.
+- Agar user kisi store ka naam aur 'category' ek sath maange (e.g. 'rohini store ki category do', 'janakpuri ki categories dikhao', 'saket store me kya categories hain')[cite: 2]:
+  -> ACTION: HAMESHA call karein 'get_category_details(category_slug="all", fetch_products=False, target_store="<store_name>")'[cite: 2].
+  -> STRICT PROHIBITION: KABHI BHI 'get_specific_store_info' call MAT KAREIN jab category puchi gayi ho!
 
 RULE 2: CATEGORY KE ITEMS / PRODUCTS MANGA HO
-- Agar user kisi category ke andar ke items/products dekhna chahe (e.g. 'fruits kaun kaun se hai', 'pet food kya hai', 'medical ki dawayi dikhao', 'snacks dikhao', 'sabzi kya kya hai')[cite: 2]:
-  -> HAMESHA call karein: get_category_details(category_slug="<slug>", fetch_products=True, target_store="<store_name_if_any>")[cite: 2].
-  -> Output me direct items (Shimla Apple, Banana, Crocin, Pedigree) ke product cards aane chahiye[cite: 2].
+- Agar user kisi category ke andar ke specific items/products dekhna chahe (e.g. 'fruits btao kaun kaun se hai', 'pet food kya hai', 'medical ki dawayi dikhao', 'snacks dikhao', 'sabzi kya kya hai')[cite: 2]:
+  -> ACTION: HAMESHA call karein 'get_category_details(category_slug="<slug>", fetch_products=True, target_store="<store_name_if_any>")'[cite: 2].
+  -> Isse direct Shimla Apple, Banana, Crocin, Pedigree jaise product cards frontend par display honge[cite: 2].
 
-RULE 3: PROBLEM-BASED & MOOD QUERIES (NO DIRECT PRODUCT NAME)
+RULE 3: PRICE SORT, COMPARISON YA BUDGET FILTER
+- Agar user 'sabse sasta', 'under 50', 'cheap', 'expensive' bole:
+  * "sabse sasta doodh" -> search_catalog_products(product_query="milk", sort_by="price_low_to_high")[cite: 2]
+  * "chips under 50" -> search_catalog_products(product_query="chips", max_price=50)[cite: 2]
+  * "Amul aur Mother dairy me sasta kaunsa hai" -> search_catalog_products(product_query="butter", sort_by="price_low_to_high")[cite: 2]
+
+RULE 4: PROBLEM-BASED & MOOD QUERIES (NO DIRECT PRODUCT NAME)
 - User aksar product ka naam nahi leta, bas apni problem batata hai:
   * "sar dard ho raha hai" / "chot lag gayi" -> search_catalog_products(product_query="crocin paracetamol pain relief")[cite: 2]
   * "pet kharab hai" / "halka khana" -> search_catalog_products(product_query="curd dahi")[cite: 2]
-  * "shaam ki chai ke sath kya lu" / "chai nashta" -> search_catalog_products(product_query="rusk biscuits namkeen snacks")[cite: 2]
-  * "ghar me pocha lagana hai" / "safai ka saman" -> search_catalog_products(product_query="lizol floor cleaner")[cite: 2]
-  * "party karni hai dosto ke sath" -> search_catalog_products(product_query="chips cold drink snacks")[cite: 2]
+  * "shaam ki chai ke sath kya lu" / "chai nashta" -> search_catalog_products(product_query="rusk biscuits namkeen")[cite: 2]
+  * "ghar me pocha lagana hai" -> search_catalog_products(product_query="lizol floor cleaner")[cite: 2]
+  * "party karni hai snacks aur cold drink" -> search_catalog_products(product_query="chips cold drink snacks")[cite: 2]
 
-RULE 4: SPECIFIC PRODUCT YA BRAND SEARCH (WITH TYPOS & QUANTITY)
-- User typing mistake kare ya desi word bole, clean search term use karein:
+RULE 5: NORMAL PRODUCT SEARCH & TYPOS
+- User spelling mistakes ya desi Hinglish likhe toh query clean karein:
   * 'dhoodh', '1 ltr milk', 'amul doodh' -> search_catalog_products(product_query="milk")[cite: 2]
   * 'chpis', 'cooldrnk', 'lays' -> search_catalog_products(product_query="chips")[cite: 2]
-  * 'tamatar pyaz', 'aloo', 'kela' -> search_catalog_products(product_query="tomato onion potato banana")[cite: 2]
-  * Agar user bole 'Paschim vihar se cold drink bhej do' -> search_catalog_products(product_query="cold drink", target_store="paschim vihar")[cite: 2]
+  * 'tamatar pyaz', 'aloo', 'kela' -> search_catalog_products(product_query="tomato potato onion banana")[cite: 2]
+  * Agar user bole 'Paschim vihar se cold drink' -> search_catalog_products(product_query="cold drink", target_store="paschim vihar")[cite: 2]
 
-RULE 5: PURE STORE LOCATION / DISTANCE QUERIES
+RULE 6: PURE STORE LOCATION / DISTANCE QUERIES
 - 'mera sabse paas wala store kaun sa hai' / 'nearest store' -> get_nearest_store_only().
 - 'aas paas ke saare stores dikhao' / 'nearby stores list' -> list_all_nearby_stores().
 - Sirf store ke baare me puchna (bina category/product ke), e.g. 'janakpuri store ke baare mein batao', 'saket store kitna dur hai'[cite: 2] -> get_specific_store_info(store_name="janakpuri")[cite: 2].
 
-RULE 6: OUT-OF-SCOPE / PROHIBITED ITEMS (STRICT NO TOOL CALL)
+RULE 7: STORE POLICY & DELIVERY FAQS (check_store_policy)
+- Agar user puche 'Delivery kitne der me hogi' -> check_store_policy(policy_type="delivery_time").
+- Agar user puche 'Delivery charge kitna lagega' ya 'Free delivery limit' -> check_store_policy(policy_type="delivery_fee").
+- Agar user puche 'Cash on delivery (COD) available hai kya' -> check_store_policy(policy_type="payment_cod").
+
+RULE 8: OUT-OF-SCOPE / PROHIBITED ITEMS (STRICT NO TOOL CALL)
 - Hum ye deliver NAHI karte:
   * Footwear: Hawai chappal, Joote, Shoes, Sandals, Slippers[cite: 2]
   * Clothing/Fashion: Shirt, Pant, T-shirt, Kurta, Jeans, Kapde[cite: 2]
@@ -316,17 +286,13 @@ RULE 6: OUT-OF-SCOPE / PROHIBITED ITEMS (STRICT NO TOOL CALL)
   * Alcohol/Cigarettes: Beer, Whiskey, Daaru, Cigarette[cite: 2]
 - REACTION: KOI TOOL CALL MAT KAREIN.
   Seedha polite Hinglish text me mana karein:
-  "Sorry! Hum abhi <item_name> deliver nahi karte. Hamare paas Fresh Grocery, Daily Essentials, Snacks aur Pharmacy products 10-20 mins me available hain. Kya aap inme se kuch order karna chahenge?"
+  "Sorry! Hum abhi <item_name> deliver nahi karte. Hamare paas Fresh Grocery, Daily Essentials, Snacks aur Pharmacy products 10-20 mins me available hain. Kya aap inme se kuch order karna chahenge?"[cite: 1, 2]
 
-RULE 7: CASUAL CHAT & SHOPPING REDIRECT (NO TOOL CALL)
+RULE 9: CASUAL CHAT (STRICT NO TOOL CALL)
 - Agar user bole 'Hi', 'Hello', 'Kaise ho', 'Kya chal raha hai', 'Bore ho raha hu':
   -> KOI TOOL CALL MAT KAREIN.
   -> 1-2 line me friendly greeting dein aur shopping redirect karein:
      "Hey! Main aapka shopping assistant hoon. Aaj snacks, cold drinks ya kitchen ke essentials me se kya mangwana chahenge? 😊"[cite: 1]
-
-RULE 8: COMPETITOR OR PRICE ARGUMENTS (NO TOOL CALL)
-- User bole 'Blinkit/Zepto pe toh sasta hai' ya 'delivery charge kitna hai':
-  -> Polite Hinglish me reassure karein ki hamare paas best quality, direct partner stores se fastest 10-20 minute delivery milti hai[cite: 2].
 """
 
 
@@ -338,7 +304,7 @@ def agent_decision_node(state: AssistantState) -> Dict[str, Any]:
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": raw_query},
@@ -361,7 +327,6 @@ def agent_decision_node(state: AssistantState) -> Dict[str, Any]:
 
         direct_answer = choice.content or ""
     except Exception:
-        logging.exception("assistant model call failed")
         tool_calls = []
         direct_answer = "Main aapki shopping me help karne ke liye yahan hoon! Aapko Grocery, Snacks, ya Pharmacy me se kya chahiye?"
 
@@ -450,7 +415,7 @@ def tool_execution_node(state: AssistantState) -> Dict[str, Any]:
             )
         tool_result_data = {"stores": stores[:4]}
 
-    # Tool 3: Specific Store Info
+    # Tool 3: Specific Store Info (Distance & ETA only)
     elif func_name == "get_specific_store_info":
         target = (args.get("store_name") or "").lower()
         matched = next((s for s in stores if target in s.get("name", "").lower()), primary_store)
@@ -470,7 +435,7 @@ def tool_execution_node(state: AssistantState) -> Dict[str, Any]:
             )
         tool_result_data = {"matched_store": matched}
 
-    # Tool 4: Category Details & Products
+    # Tool 4: Category Details & Category Products
     elif func_name == "get_category_details":
         slug = args.get("category_slug")
         fetch_prods = args.get("fetch_products", False)
@@ -491,7 +456,7 @@ def tool_execution_node(state: AssistantState) -> Dict[str, Any]:
             except Exception:
                 categories = []
 
-        # Exact slug filter
+        # Category resolution
         matched_cat = None
         if slug and slug != "all":
             for c in categories:
@@ -510,9 +475,21 @@ def tool_execution_node(state: AssistantState) -> Dict[str, Any]:
             except Exception:
                 prod_list = []
 
-            store_name = store_to_use.get("name", "Store") if store_to_use else "Store"
             for p in prod_list:
-                cards.append(build_product_card(p, store_id, store_name=store_name, store_eta=store_eta))
+                pid = str(p.get("_id") or p.get("product_id") or "")
+                price = p.get("price") or p.get("price_rupees") or 0
+                cards.append(
+                    {
+                        "type": "product",
+                        "id": pid,
+                        "title": p.get("name", ""),
+                        "subtitle": f"Delivers in ~{store_eta} mins ({store_to_use.get('name', 'Store')})",
+                        "meta": f"₹{price}",
+                        "href": f"/store/{store_id}/product/{pid}",
+                        "store_id": store_id,
+                        "image": product_card_image(p),
+                    }
+                )
 
             tool_result_data = {
                 "category_name": matched_cat.get("name"),
@@ -521,9 +498,9 @@ def tool_execution_node(state: AssistantState) -> Dict[str, Any]:
                 "product_count": len(prod_list),
             }
 
-        # B) User wants Category Card (e.g. "medical category do")
+        # B) User wants Category Cards (e.g. "rohini store ki categories do")
         else:
-            cats_to_display = [matched_cat] if matched_cat else categories
+            cats_to_display = [matched_cat] if (matched_cat and slug != "all") else categories
             for cat in cats_to_display:
                 if not cat:
                     continue
@@ -536,7 +513,7 @@ def tool_execution_node(state: AssistantState) -> Dict[str, Any]:
                         "id": cid,
                         "title": name,
                         "subtitle": f"{cat.get('product_count', 0)} items",
-                        "href": f"/store/{store_id}?category={c_slug}",
+                        "href": f"/store/{store_id}/category/{c_slug}",
                         "store_id": store_id,
                         "image": category_card_image(cat),
                     }
@@ -547,9 +524,11 @@ def tool_execution_node(state: AssistantState) -> Dict[str, Any]:
                 "categories": [c.get("name") for c in cats_to_display if c],
             }
 
-    # Tool 5: Search Products (by query)
+    # Tool 5: Search Products (With Sort & Budget Filter)
     elif func_name == "search_catalog_products":
         prod_query = args.get("product_query") or ""
+        sort_by = args.get("sort_by")
+        max_price = args.get("max_price")
         target_store_name = (args.get("target_store") or "").lower()
         source_store = primary_store
         if target_store_name and stores:
@@ -557,8 +536,20 @@ def tool_execution_node(state: AssistantState) -> Dict[str, Any]:
 
         found_prods = []
         try:
-            query_filter = {"name": {"$regex": prod_query, "$options": "i"}, "isActive": True}
-            mongo_prods = list(sync_db.products.find(query_filter).limit(6))
+            query_filter: Dict[str, Any] = {
+                "name": {"$regex": prod_query, "$options": "i"},
+                "isActive": True,
+            }
+            if max_price is not None:
+                query_filter["price"] = {"$lte": max_price}
+
+            cursor = sync_db.products.find(query_filter)
+            if sort_by == "price_low_to_high":
+                cursor = cursor.sort("price", 1)
+            elif sort_by == "price_high_to_low":
+                cursor = cursor.sort("price", -1)
+
+            mongo_prods = list(cursor.limit(6))
             for p in mongo_prods:
                 p["_id"] = str(p["_id"])
                 found_prods.append(p)
@@ -566,7 +557,7 @@ def tool_execution_node(state: AssistantState) -> Dict[str, Any]:
             found_prods = []
 
         # Cosine Similarity Fallback with Safe Threshold
-        if not found_prods:
+        if not found_prods and max_price is None:
             try:
                 user_vector = generate_embedding(prod_query)
                 all_active = list_active_products_sync()[:50]
@@ -583,15 +574,47 @@ def tool_execution_node(state: AssistantState) -> Dict[str, Any]:
 
         store_id = str(source_store.get("store_id") or source_store.get("_id") or "") if source_store else ""
         store_eta = source_store.get("eta_minutes", 15) if source_store else 15
-        store_name = source_store.get("name") if source_store else "Store"
         for p in found_prods:
-            cards.append(build_product_card(p, store_id, store_name=store_name or "Store", store_eta=store_eta))
+            pid = str(p.get("_id") or p.get("product_id") or "")
+            price = p.get("price") or p.get("price_rupees") or 0
+            cards.append(
+                {
+                    "type": "product",
+                    "id": pid,
+                    "title": p.get("name", ""),
+                    "subtitle": f"Delivers in ~{store_eta} mins ({source_store.get('name') if source_store else 'Store'})",
+                    "meta": f"₹{price}",
+                    "href": f"/store/{store_id}/product/{pid}",
+                    "store_id": store_id,
+                    "image": product_card_image(p),
+                }
+            )
         tool_result_data = {
             "query": prod_query,
             "store_name": source_store.get("name") if source_store else None,
             "found_count": len(found_prods),
             "products": [p.get("name") for p in found_prods],
         }
+
+    # Tool 6: Store Policy & FAQs
+    elif func_name == "check_store_policy":
+        ptype = args.get("policy_type")
+        if ptype == "delivery_fee":
+            tool_result_data = {
+                "message": "Hamari delivery fee ₹25 hai, lekin ₹199 ke upar ke orders par DELIVERY ekdum FREE hai!"
+            }
+        elif ptype == "delivery_time":
+            tool_result_data = {
+                "message": "Hamare dark stores se delivery 10 se 20 minutes ke andar aapke doorstep par pahunch jaati hai."
+            }
+        elif ptype == "payment_cod":
+            tool_result_data = {
+                "message": "Haan, Cash on Delivery (COD) aur Online UPI/Cards dono payment methods available hain."
+            }
+        else:
+            tool_result_data = {
+                "message": "Hum 10-minute instant delivery, easy replacement aur 100% fresh items guarantee provide karte hain."
+            }
 
     return {
         "tool_result": tool_result_data,
@@ -612,41 +635,39 @@ def final_answer_node(state: AssistantState) -> Dict[str, Any]:
     if not tool_calls:
         return {"answer": direct_ans}
 
-  system_prompt = f"""
-Aap Quick Commerce sales assistant hain. Aapka kaam hai backend se aaye real data ko user-friendly Hinglish bhasha me convert karna.
+    system_prompt = f"""
+    Aap Quick Commerce sales assistant hain. Aapka kaam hai backend data ko natural aur polite Hinglish response me convert karna.
 
-Context:
-- User Query: '{query}'
-- Backend Data: {json.dumps(tool_result, default=str)}
+    Context:
+    - User Query: '{query}'
+    - Backend Data: {json.dumps(tool_result, default=str)}
 
-SCENARIO-BASED RULES:
-1. SPECIFIC STORE KI CATEGORIES (Jab user ne store ki categories maangi hon):
-   - Store ka naam lein aur available categories ke naam mention karein (jaise: "QuickStore Rohini me Dairy, Snacks, Vegetables aur Pharmacy categories available hain").
-   - Puchein: "Aap kis category ke items dekhna chahenge?"
+    SCENARIO RULES:
+    1. STORE KI CATEGORIES AAYI HAIN:
+       - Store ka naam lein aur available categories ke naam batayein (e.g. 'QuickStore Rohini me Dairy, Snacks, Vegetables aur Pharmacy available hain')[cite: 2].
+       - Puchein: 'Aap kis category ke items dekhna chahenge?'
 
-2. CATEGORY KE PRODUCTS (Jab fal, sabzi, ya snacks ke items aaye hon):
-   - Broad category ka naam mat dohraiye. Direct 2-3 top items ke naam lijiye (e.g. "Hamare paas taaze Shimla Apple aur Robusta Banana available hain").
-   - Delivery time mention karein aur puchein cart me kya add karna hai.
+    2. CATEGORY PRODUCTS AAYE HAIN (e.g. Fal ya Sabzi ke items):
+       - Category ka naam mat dohraiye. Direct 2-3 top items ke naam lijiye (e.g. 'Hamare paas taaze Shimla Apple aur Robusta Banana available hain')[cite: 2].
+       - Delivery time mention karein aur puchein cart me kya add karna hai.
 
-3. STORE DETAILS / NEAREST STORE (Jab store ki location/distance puchi ho):
-   - Store ka naam, distance (e.g. 4.4 km) aur delivery time (ETA, e.g. 20 mins) saaf batayein.
-   - Bilkul mat boliye ki "item out of stock hai" agar user ne koi saman manga hi nahi tha!
+    3. STORE DETAILS / NEAREST STORE:
+       - Store ka naam, distance (e.g. 4.4 km) aur delivery time (e.g. 20 mins) batayein.
+       - DO NOT say item is out of stock when user only asked about a store!
 
-4. PRODUCT MIL GAYA (Direct search success):
-   - Product ka naam aur delivery time highlight karein.
+    4. PRODUCT SEARCH RESULT:
+       - Product mila toh uska delivery time aur price highlight karein.
+       - Agar 0 mila toh bataiye ki item stock me nahi hai par baki fresh grocery items available hain[cite: 2].
 
-5. PRODUCT 0 MILA / OUT OF STOCK:
-   - Saaf aur politely bataiye ki yeh item abhi stock me nahi hai, par similar daily essentials available hain.
+    5. STORE POLICY / FAQ:
+       - Policy details simple aur clear bhasha me batayein.
 
-GENERAL GUIDELINES:
-- Tone: Friendly, short (maximum 2-3 lines), Hinglish.
-- Kabhi bhi ek hi line me contradiction mat karein ("nahi hai lekin hai" jaisa bilkul nahi bolna).
-- Har answer ko ek engaging shopping question ke sath end karein.
-"""
+    GUIDELINES: Short (2 lines), conversational Hinglish, engaging follow-up question.
+    """
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-3.5-turbo",
             messages=[{"role": "system", "content": system_prompt}],
             temperature=0.4,
             timeout=8.0,
