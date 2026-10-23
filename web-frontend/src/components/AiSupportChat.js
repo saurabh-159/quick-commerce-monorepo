@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { getToken, getRole } from '@/utils/auth';
 import { addGuestItem } from '@/utils/guestCart';
@@ -65,23 +65,70 @@ function resolveCardImage(card) {
   return FALLBACK_ART[type] || FALLBACK_ART.category;
 }
 
-function requestUserLocation() {
-  return new Promise((resolve) => {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      resolve(null);
-      return;
+const LOCATION_CACHE_KEY = 'qc-help-coords';
+const GEO_OPTIONS = {
+  enableHighAccuracy: false,
+  timeout: 60000,
+  maximumAge: 5 * 60 * 1000,
+};
+const LOCATION_PROMPT_HINT =
+  'Tap Allow location, then choose Allow on the browser prompt. You can type after location is on.';
+const LOCATION_BLOCKED_HINT =
+  'Location is blocked for this site. Open the lock icon in the address bar, set Location to Allow, then tap Try again.';
+const LOCATION_GPS_HINT =
+  'Location is allowed, but a position has not arrived yet. Tap Try again.';
+
+function readCachedCoords() {
+  if (typeof sessionStorage === 'undefined') return null;
+  try {
+    const parsed = JSON.parse(sessionStorage.getItem(LOCATION_CACHE_KEY) || 'null');
+    if (Number.isFinite(parsed?.lat) && Number.isFinite(parsed?.lng)) {
+      return { lat: parsed.lat, lng: parsed.lng };
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        resolve({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-        });
-      },
-      () => resolve(null),
-      { enableHighAccuracy: false, timeout: 8000, maximumAge: 60_000 }
-    );
-  });
+  } catch {
+    /* ignore broken cache */
+  }
+  return null;
+}
+
+function writeCachedCoords(coords) {
+  try {
+    sessionStorage.setItem(LOCATION_CACHE_KEY, JSON.stringify(coords));
+  } catch {
+    /* private mode */
+  }
+}
+
+function clearCachedCoords() {
+  try {
+    sessionStorage.removeItem(LOCATION_CACHE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function readGeoPermission() {
+  if (typeof navigator === 'undefined' || !navigator.permissions?.query) {
+    return Promise.resolve(null);
+  }
+  return navigator.permissions
+    .query({ name: 'geolocation' })
+    .then((status) => status.state)
+    .catch(() => null);
+}
+
+function locationBadgeLabel(status, hint) {
+  if (status === 'ready') return 'Location on';
+  if (status === 'pending') return 'Finding you…';
+  if (status === 'denied') return 'Location blocked';
+  if (hint === LOCATION_GPS_HINT) return 'Try again';
+  return 'Allow location';
+}
+
+function locationActionLabel(status, hint) {
+  if (status === 'pending') return 'Finding you…';
+  if (status === 'denied' || hint === LOCATION_GPS_HINT) return 'Try again';
+  return 'Allow location';
 }
 
 function pricePaiseFromCard(card) {
@@ -228,8 +275,12 @@ export default function AiSupportChat({ title = 'Ask for help', mode = 'auto' })
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [location, setLocation] = useState(null);
-  const [locationStatus, setLocationStatus] = useState('pending');
+  const [locationStatus, setLocationStatus] = useState('need-permission');
+  const [locationHint, setLocationHint] = useState(LOCATION_PROMPT_HINT);
   const scrollerRef = useRef(null);
+  const locationRef = useRef(null);
+  const requestSerial = useRef(0);
+  const askForLocationRef = useRef(() => {});
 
   const resolvedMode = (() => {
     if (mode === 'order' || mode === 'assistant') return mode;
@@ -238,23 +289,174 @@ export default function AiSupportChat({ title = 'Ask for help', mode = 'auto' })
     return token && role === 'customer' ? 'order' : 'assistant';
   })();
 
-  useEffect(() => {
-    if (resolvedMode !== 'assistant') return;
-    let cancelled = false;
-    (async () => {
-      const coords = await requestUserLocation();
-      if (cancelled) return;
-      if (coords) {
+  const canChat = resolvedMode !== 'assistant' || locationStatus === 'ready';
+  const locationMessage =
+    locationStatus === 'pending'
+      ? 'Finding your location…'
+      : locationHint || LOCATION_PROMPT_HINT;
+
+  const askForLocation = useCallback((attempt = 0, fromUser = false) => {
+    const serial = ++requestSerial.current;
+
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setLocationStatus('denied');
+      setLocationHint('This browser cannot share location.');
+      return;
+    }
+
+    if (fromUser && !locationRef.current) {
+      setLocationStatus('pending');
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (requestSerial.current !== serial) return;
+        const coords = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        };
+        locationRef.current = coords;
+        writeCachedCoords(coords);
         setLocation(coords);
         setLocationStatus('ready');
-      } else {
+        setLocationHint('');
+      },
+      (err) => {
+        void (async () => {
+          if (requestSerial.current !== serial) return;
+          const permission = await readGeoPermission();
+          if (requestSerial.current !== serial) return;
+
+          const blocked =
+            permission === 'denied' ||
+            (fromUser && err?.code === 1 && permission !== 'granted' && permission !== 'prompt');
+
+          if (blocked) {
+            locationRef.current = null;
+            clearCachedCoords();
+            setLocation(null);
+            setLocationStatus('denied');
+            setLocationHint(LOCATION_BLOCKED_HINT);
+            return;
+          }
+
+          if (err?.code === 1) {
+            if (locationRef.current) {
+              setLocation(locationRef.current);
+              setLocationStatus('ready');
+              setLocationHint('');
+            } else {
+              setLocationStatus('need-permission');
+              setLocationHint(LOCATION_PROMPT_HINT);
+            }
+            return;
+          }
+
+          if (locationRef.current) {
+            setLocation(locationRef.current);
+            setLocationStatus('ready');
+            setLocationHint('');
+            return;
+          }
+
+          if (permission === 'granted' && attempt < 2) {
+            window.setTimeout(() => {
+              if (requestSerial.current === serial) askForLocationRef.current(attempt + 1, fromUser);
+            }, 1200);
+            return;
+          }
+
+          setLocationStatus('need-permission');
+          setLocationHint(permission === 'granted' ? LOCATION_GPS_HINT : LOCATION_PROMPT_HINT);
+        })();
+      },
+      GEO_OPTIONS
+    );
+  }, []);
+
+  useEffect(() => {
+    askForLocationRef.current = askForLocation;
+  }, [askForLocation]);
+
+  useEffect(() => {
+    if (resolvedMode !== 'assistant') return undefined;
+
+    const cached = readCachedCoords();
+    if (cached) {
+      locationRef.current = cached;
+      setLocation(cached);
+      setLocationStatus('ready');
+    }
+
+    let permissionStatus = null;
+    let cancelled = false;
+
+    (async () => {
+      const permission = await readGeoPermission();
+      if (cancelled) return;
+
+      if (permission === 'denied') {
+        locationRef.current = null;
+        clearCachedCoords();
+        setLocation(null);
         setLocationStatus('denied');
+        setLocationHint(LOCATION_BLOCKED_HINT);
+        return;
       }
+
+      if (permission === 'granted' || locationRef.current) {
+        if (!locationRef.current) {
+          setLocationStatus('pending');
+          setLocationHint('');
+        }
+        askForLocationRef.current(0);
+        return;
+      }
+
+      setLocationStatus('need-permission');
+      setLocationHint(LOCATION_PROMPT_HINT);
+      askForLocationRef.current(0);
     })();
+
+    if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
+      navigator.permissions
+        .query({ name: 'geolocation' })
+        .then((status) => {
+          if (cancelled) return;
+          permissionStatus = status;
+          status.onchange = () => {
+            if (status.state === 'denied') {
+              locationRef.current = null;
+              clearCachedCoords();
+              setLocation(null);
+              setLocationStatus('denied');
+              setLocationHint(LOCATION_BLOCKED_HINT);
+              return;
+            }
+            if (status.state === 'granted') {
+              if (!locationRef.current) {
+                setLocationStatus('pending');
+                setLocationHint('');
+              }
+              askForLocationRef.current(0);
+            }
+          };
+        })
+        .catch(() => {});
+    }
+
     return () => {
       cancelled = true;
+      requestSerial.current += 1;
+      if (permissionStatus) permissionStatus.onchange = null;
     };
   }, [resolvedMode]);
+
+  const allowLocation = () => {
+    setLocationHint('');
+    if (!locationRef.current) setLocationStatus('pending');
+    askForLocation(0, true);
+  };
 
   useEffect(() => {
     const el = scrollerRef.current;
@@ -266,6 +468,7 @@ export default function AiSupportChat({ title = 'Ask for help', mode = 'auto' })
     if (event?.preventDefault) event.preventDefault();
     const query = (preset ?? input).trim();
     if (!query || loading) return;
+    if (resolvedMode === 'assistant' && locationStatus !== 'ready') return;
 
     setError('');
     setLoading(true);
@@ -336,28 +539,22 @@ export default function AiSupportChat({ title = 'Ask for help', mode = 'auto' })
                 : 'Ask about nearby stores, categories, products, or shopping help.'}
             </p>
           </div>
-          {resolvedMode === 'assistant' && (
-            <span
-              className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-medium ${
-                locationStatus === 'ready'
-                  ? 'bg-brand-soft text-brand'
-                  : locationStatus === 'denied'
-                    ? 'bg-brand-bg text-brand-muted-light'
-                    : 'bg-brand-bg text-brand-muted-light'
-              }`}
-            >
-              <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  locationStatus === 'ready'
-                    ? 'animate-pulse bg-brand'
-                    : 'bg-brand-border'
-                }`}
-              />
-              {locationStatus === 'ready' && 'Location on'}
-              {locationStatus === 'denied' && 'Location off'}
-              {locationStatus === 'pending' && 'Finding you…'}
-            </span>
-          )}
+          {resolvedMode === 'assistant' &&
+            (locationStatus === 'ready' ? (
+              <span className="inline-flex items-center gap-2 rounded-full bg-brand-soft px-3 py-1.5 text-[11px] font-medium text-brand">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand" />
+                Location on
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={allowLocation}
+                className="inline-flex items-center gap-2 rounded-full bg-brand px-3 py-1.5 text-[11px] font-medium text-white transition hover:bg-brand-dark"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                {locationBadgeLabel(locationStatus, locationHint)}
+              </button>
+            ))}
         </div>
       </div>
 
@@ -367,24 +564,40 @@ export default function AiSupportChat({ title = 'Ask for help', mode = 'auto' })
       >
         {messages.length === 0 && (
           <div className="help-empty rounded-[22px] border border-dashed border-brand-border bg-brand-soft p-5">
-            <p className="font-sans text-xl text-brand-text">Start with a quick ask</p>
-            <p className="mt-1 text-sm text-brand-muted">
-              {resolvedMode === 'order'
-                ? 'Try something about delivery status or refunds.'
-                : 'We’ll pull nearby stores and category cards with photos.'}
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {suggestions.map((tip) => (
+            {canChat ? (
+              <>
+                <p className="font-sans text-xl text-brand-text">Start with a quick ask</p>
+                <p className="mt-1 text-sm text-brand-muted">
+                  {resolvedMode === 'order'
+                    ? 'Try something about delivery status or refunds.'
+                    : 'We’ll pull nearby stores and category cards with photos.'}
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {suggestions.map((tip) => (
+                    <button
+                      key={tip}
+                      type="button"
+                      onClick={() => send(null, tip)}
+                      className="rounded-full border border-brand-border bg-white px-3.5 py-2 text-left text-xs font-medium text-brand-text transition hover:border-brand hover:bg-brand-soft hover:text-brand"
+                    >
+                      {tip}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="font-sans text-xl text-brand-text">Allow location to chat</p>
+                <p className="mt-1 text-sm leading-6 text-brand-muted">{locationMessage}</p>
                 <button
-                  key={tip}
                   type="button"
-                  onClick={() => send(null, tip)}
-                  className="rounded-full border border-brand-border bg-white px-3.5 py-2 text-left text-xs font-medium text-brand-text transition hover:border-brand hover:bg-brand-soft hover:text-brand"
+                  onClick={allowLocation}
+                  className="mt-4 inline-flex rounded-full bg-brand px-4 py-2.5 text-sm font-medium text-white transition hover:bg-brand-dark"
                 >
-                  {tip}
+                  {locationActionLabel(locationStatus, locationHint)}
                 </button>
-              ))}
-            </div>
+              </>
+            )}
           </div>
         )}
 
@@ -445,18 +658,23 @@ export default function AiSupportChat({ title = 'Ask for help', mode = 'auto' })
         onSubmit={send}
         className="relative border-t border-brand-soft bg-brand-soft/80 px-4 py-4 backdrop-blur sm:px-6"
       >
+        {!canChat && messages.length > 0 && (
+          <p className="mb-2 px-2 text-center text-xs leading-5 text-brand-muted">
+            {locationMessage}
+          </p>
+        )}
         <div className="flex items-center gap-2 rounded-full border border-brand-border bg-white p-1.5 shadow-[0_8px_24px_rgba(26,20,51,0.04)] focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/15">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your question…"
-            disabled={loading}
-            className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm text-brand-text outline-none placeholder:text-brand-muted-light"
+            placeholder={canChat ? 'Type your question…' : 'Allow location to type'}
+            disabled={loading || !canChat}
+            className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm text-brand-text outline-none placeholder:text-brand-muted-light disabled:cursor-not-allowed"
           />
           <button
             type="submit"
-            disabled={loading || !input.trim()}
+            disabled={loading || !canChat || !input.trim()}
             className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand text-white transition hover:bg-brand-dark disabled:bg-brand-border disabled:opacity-70"
             aria-label="Send"
           >
