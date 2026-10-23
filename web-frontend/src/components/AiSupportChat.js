@@ -88,7 +88,7 @@ function AssistantCard({ card, index }) {
   return (
     <Link
       href={card.href}
-      className="help-card group relative flex overflow-hidden rounded-2xl bg-white shadow-[0_8px_24px_rgba(26,47,42,0.06)] ring-1 ring-brand-border transition duration-300 hover:-translate-y-1 hover:shadow-[0_16px_36px_rgba(59,154,156,0.14)] hover:ring-brand/40"
+      className="help-card group relative flex overflow-hidden rounded-2xl bg-white shadow-[0_8px_24px_rgba(26,20,51,0.06)] ring-1 ring-brand-border transition duration-300 hover:-translate-y-1 hover:shadow-[0_16px_36px_rgba(83,50,201,0.16)] hover:ring-brand/40"
       style={{ animationDelay: `${index * 70}ms` }}
     >
       <div className="relative h-[92px] w-[92px] shrink-0 overflow-hidden bg-brand-soft sm:h-[104px] sm:w-[104px]">
@@ -220,8 +220,8 @@ export default function AiSupportChat({ title = 'Ask for help', mode = 'auto' })
   const suggestions = SUGGESTIONS[resolvedMode] || SUGGESTIONS.assistant;
 
   return (
-    <section className="help-shell relative overflow-hidden rounded-[28px] border border-brand-border bg-white shadow-[0_20px_50px_rgba(26,47,42,0.06)]">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(ellipse_at_top_left,_rgba(59,154,156,0.14),_transparent_55%),radial-gradient(ellipse_at_top_right,_rgba(253,244,169,0.45),_transparent_45%)]" />
+    <section className="help-shell relative overflow-hidden rounded-[28px] border border-brand-border bg-white shadow-[0_20px_50px_rgba(26,20,51,0.06)]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(ellipse_at_top_left,_rgba(83,50,201,0.14),_transparent_55%),radial-gradient(ellipse_at_top_right,_rgba(241,249,90,0.35),_transparent_45%)]" />
 
       <div className="relative border-b border-brand-soft px-5 pb-5 pt-6 sm:px-7">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -341,7 +341,7 @@ export default function AiSupportChat({ title = 'Ask for help', mode = 'auto' })
         onSubmit={send}
         className="relative border-t border-brand-soft bg-brand-soft/80 px-4 py-4 backdrop-blur sm:px-6"
       >
-        <div className="flex items-center gap-2 rounded-full border border-brand-border bg-white p-1.5 shadow-[0_8px_24px_rgba(26,47,42,0.04)] focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/15">
+        <div className="flex items-center gap-2 rounded-full border border-brand-border bg-white p-1.5 shadow-[0_8px_24px_rgba(26,20,51,0.04)] focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/15">
           <input
             type="text"
             value={input}

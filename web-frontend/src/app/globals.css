@@ -3,24 +3,24 @@
 @tailwind utilities;
 
 /*
-  Theme palette (screenshot Row 9 / Palette 1):
-  #FDF4A9 accent · #3B9A9C primary · #41ABAE bright · #245643 dark
+  Theme palette:
+  #5332C9 Electric Purple · #FF5555 Sunset Orange · #F1F95A Bright Lemon · #FFFFFF White
 */
 :root {
-  --qc-accent: #fdf4a9;
-  --qc-primary: #3b9a9c;
-  --qc-primary-bright: #41abae;
-  --qc-primary-dark: #245643;
+  --qc-primary: #5332c9;
+  --qc-primary-bright: #ff5555;
+  --qc-accent: #f1f95a;
+  --qc-primary-dark: #3d2599;
 
-  --qc-bg: #f3f9f8;
+  --qc-bg: #f7f5fc;
   --qc-surface: #ffffff;
-  --qc-soft: #e7f3f3;
-  --qc-text: #1a2f2a;
-  --qc-muted: #5c6f6a;
-  --qc-muted-light: #7a8f89;
-  --qc-border: #cfe0de;
-  --qc-warning-bg: #fff8dc;
-  --qc-warning-text: #7a5a10;
+  --qc-soft: #ebe6fa;
+  --qc-text: #1a1433;
+  --qc-muted: #5c5675;
+  --qc-muted-light: #857e9c;
+  --qc-border: #d8d2ee;
+  --qc-warning-bg: #fcfde8;
+  --qc-warning-text: #c43d3d;
 
   --font-sans: var(--font-poppins), 'Poppins', ui-sans-serif, system-ui, sans-serif;
 }

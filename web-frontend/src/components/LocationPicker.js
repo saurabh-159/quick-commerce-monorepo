@@ -8,7 +8,7 @@ const pinIcon = L.divIcon({
   className: '',
   iconSize: [22, 22],
   iconAnchor: [11, 11],
-  html: '<span style="display:block;width:22px;height:22px;border-radius:9999px;background:#3b9a9c;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45)"></span>',
+  html: '<span style="display:block;width:22px;height:22px;border-radius:9999px;background:#5332c9;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45)"></span>',
 });
 
 export default function LocationPicker({ lat, lng, radiusKm, onChange, readOnly = false, className = 'h-80' }) {
@@ -45,9 +45,9 @@ export default function LocationPicker({ lat, lng, radiusKm, onChange, readOnly 
     const radius = Number(radiusKm);
     const circle = L.circle(start, {
       radius: Number.isFinite(radius) && radius > 0 ? radius * 1000 : 0,
-      color: '#3b9a9c',
+      color: '#5332c9',
       weight: 1,
-      fillColor: '#3b9a9c',
+      fillColor: '#5332c9',
       fillOpacity: 0.12,
     }).addTo(map);
 
