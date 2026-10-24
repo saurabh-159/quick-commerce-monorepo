@@ -37,6 +37,7 @@ export function addGuestItem({ storeId, storeName, product }) {
       productId: product.id || product._id,
       name: product.name,
       unit: product.unit,
+      images: product.images || (product.image ? [product.image] : []),
       qty: 1,
       pricePaise: product.sellingPricePaise,
       stock: product.stock || 99,
